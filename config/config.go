@@ -71,5 +71,7 @@ func ConnectDB() {
 	// 自动迁移
 	DB.AutoMigrate(&models.User{}) // 这将创建或更新 User 表
 	DB.AutoMigrate(&models.Competitions{})
-	DB.AutoMigrate(&models.CompetitionParticipants{})
+	DB.AutoMigrate(&models.CompetitionUser{})
+	DB.AutoMigrate(&models.GroupUser{})
+	DB.AutoMigrate(&models.Group{})
 }

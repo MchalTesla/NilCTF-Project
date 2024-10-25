@@ -54,7 +54,7 @@
                     // 如果用户已登录，显示退出按钮
                     $('#logout-button').show();
 
-                    // 在导航栏添加退出登录按钮
+                    // 在导航栏添加欢迎信息
                     $('#nav-items').append(`
                         <li class="nav-item">
                             <span class="nav-link">欢迎, ${response.username}</span>
@@ -76,17 +76,23 @@
 
             // 获取比赛列表
             $.ajax({
-                type: 'GET',
+                type: 'POST',
                 url: '/api/competitions', // 获取比赛的 API 端点
                 success: function(response) {
                     const competitionList = $('#competition-list');
-                    response.competitions.forEach(function(competition) {
+                    response.message.forEach(function(competition) {
+                        // 根据最大队伍人数判断比赛类型
+                        let competitionType = competition.max_team_size === 1 ? '个人赛' : '团队赛';
+
                         competitionList.append(`
                             <li class="list-group-item">
                                 <h5>${competition.name}</h5>
+                                <p>描述: ${competition.description}</p>
                                 <p>开始时间: ${competition.start_time}</p>
                                 <p>结束时间: ${competition.end_time}</p>
-                                <p>参与人数: ${competition.participants}人</p>
+                                <p>参与队伍数量: ${competition.participant_count} / ${competition.team_limit > 0 ? competition.team_limit : '无限制'}</p>
+                                <p>队伍最大人数限制: ${competition.max_team_size > 0 ? competition.max_team_size : '无限制'}</p>
+                                <p>比赛类型: ${competitionType}</p> <!-- 新增比赛类型 -->
                             </li>
                         `);
                     });

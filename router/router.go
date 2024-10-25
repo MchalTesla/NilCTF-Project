@@ -32,4 +32,5 @@ func SetupRouter(r *gin.Engine) {
 	r.POST("/api/index", middleware.JWTAuthMiddleware(), controllers.IndexController) // 使用 JWT 中间件保护 Index 路由
 	r.POST("/api/logout", controllers.Logout)
 	r.POST("api/verify_login", middleware.JWTAuthMiddleware(), controllers.VerifyLogin)
+	r.POST("api/competitions", controllers.Competitions)
 }
