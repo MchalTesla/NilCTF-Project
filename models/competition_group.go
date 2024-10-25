@@ -4,8 +4,8 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type CompetitionGroup struct {
+type CompetitionUser struct {
 	gorm.Model
-	UserID        uint `gorm:"not null"` // 用户ID
+	GroupID       uint `gorm:"not null"` // 组ID
 	CompetitionID uint `gorm:"not null"` // 比赛ID
 }
