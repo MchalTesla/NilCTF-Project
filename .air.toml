@@ -1,0 +1,15 @@
+# .air.toml
+
+# 监听的文件类型
+root = "."
+include_ext = ["go"]
+exclude_dir = ["assets", "vendor"]
+
+[build]
+bin = "tmp/main" # 可执行文件输出路径
+cmd = "go build -o tmp/main ." # 构建命令
+
+[watch]
+include_ext = ["go", "tpl", "tmpl", "html", "css", "js"]
+exclude_dir = ["assets", "vendor"]
+

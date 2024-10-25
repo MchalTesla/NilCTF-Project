@@ -1,0 +1,19 @@
+package main
+
+import (
+	_ "AWD-Competition-Platform/config"
+	"AWD-Competition-Platform/router"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	// 使用gin创建一个新的路由器
+	r := gin.Default()
+
+	// 设置路由
+	router.SetupRouter(r)
+
+	// 启动服务器
+	r.Run(":8080") // 启动服务，监听8080端口
+}
