@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"AWD-Competition-Platform/config"
 	"AWD-Competition-Platform/models"
+	"AWD-Competition-Platform/utils"
 )
 
 func Register(c *gin.Context) {
@@ -21,7 +22,8 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	if err := user.HashPassword(user.Password); err != nil {
+	hashPassword, err := utils.HashPassword(user.Password)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "密码加密失败"})
 		return
 	}
