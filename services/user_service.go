@@ -2,17 +2,17 @@ package services
 
 import (
 	"AWD-Competition-Platform/models"
-	"AWD-Competition-Platform/repositories"
+	"AWD-Competition-Platform/repositories/interface"
 	"AWD-Competition-Platform/utils"
 	"fmt"
 )
 
 type UserService struct {
-	UR repositories.UserRepositoryInterface
+	UR repositories_interface.UserRepositoryInterface
 }
 
 // 返回一个新的Userservice实例
-func NewUserService(UR repositories.UserRepositoryInterface) *UserService {
+func NewUserService(UR repositories_interface.UserRepositoryInterface) *UserService {
 	return &UserService{UR: UR}
 }
 

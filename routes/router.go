@@ -1,8 +1,11 @@
 package routes
 
 import (
+	"AWD-Competition-Platform/config"
 	"AWD-Competition-Platform/controllers"
 	"AWD-Competition-Platform/middleware"
+	"AWD-Competition-Platform/repositories"
+	"AWD-Competition-Platform/services"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -29,7 +32,8 @@ func Setuproutes(r *gin.Engine) {
 	})
 
 	r.POST("/api/register", controllers.Register)
-	r.POST("/api/login", controllers.Login)
+	// 登录界面，匿名函数负责初始化一些对象
+	r.POST("/api/login", func (c *gin.Context) {controllers.Login(c, services.NewUserService(repositories.NewUserRepository(config.DB)))})
 	r.POST("/api/index", middleware.JWTAuthMiddleware(), controllers.IndexController) // 使用 JWT 中间件保护 Index 路由
 	r.POST("/api/logout", controllers.Logout)
 	r.POST("api/verify_login", middleware.JWTAuthMiddleware(), controllers.VerifyLogin)

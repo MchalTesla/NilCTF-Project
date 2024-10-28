@@ -1,4 +1,4 @@
-package services
+package services_interface
 
 import (
 	"AWD-Competition-Platform/models"

@@ -1,17 +1,14 @@
 package controllers
 
 import (
-	"net/http"
-	"github.com/gin-gonic/gin"
-	"AWD-Competition-Platform/config"
 	"AWD-Competition-Platform/middleware"
-	"AWD-Competition-Platform/services"
-	"AWD-Competition-Platform/repositories"
+	"AWD-Competition-Platform/services/interface"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func Login(c *gin.Context) {
-	UR := repositories.NewUserRepository(config.DB)
-	US := services.NewUserService(UR)
+func Login(c *gin.Context, US services_interface.UserServiceInterface) {
 	
 	var input struct {
 		Username string `json:"username"`

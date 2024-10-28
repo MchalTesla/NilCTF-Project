@@ -1,4 +1,4 @@
-package repositories
+package repositories_interface
 
 import (
 	"AWD-Competition-Platform/models"
