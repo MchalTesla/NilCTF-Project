@@ -17,7 +17,7 @@ func Login(c *gin.Context, US services_interface.UserServiceInterface) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail"})
 		return
 	}
 

@@ -3,6 +3,7 @@ package middleware
 import (
 	"NilCTF/config"
 	"NilCTF/models"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -56,6 +57,10 @@ func ParseToken(tokenString string) (*jwt.Token, *Claims, error) {
 		return config.JwtSecret, nil
 	})
 
+	if err != nil {
+		err = fmt.Errorf("ERR_INTERNAL_SERVER")
+	}
+
 	return token, claims, err
 }
 
@@ -70,5 +75,9 @@ func GenerateToken(ID uint) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(config.JwtSecret)
+	tokenString, err := token.SignedString(config.JwtSecret)
+	if err != nil {
+		return "", fmt.Errorf("ERR_INTERNAL_SERVER")
+	}
+	return tokenString, nil
 }
