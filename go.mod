@@ -1,4 +1,4 @@
-module AWD-Competition-Platform
+module NilCTF
 
 go 1.23.2
 
