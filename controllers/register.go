@@ -5,31 +5,22 @@ import (
 	"github.com/gin-gonic/gin"
 	"AWD-Competition-Platform/config"
 	"AWD-Competition-Platform/models"
-	"AWD-Competition-Platform/utils"
+	"AWD-Competition-Platform/services"
+	"AWD-Competition-Platform/repositories"
 )
 
 func Register(c *gin.Context) {
+	UR := repositories.NewUserRepository(config.DB)
+	US := services.NewUserService(UR)
+
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 检查用户名是否已经存在
-	var existingUser models.User
-	if err := config.DB.Where("username = ?", user.Username).First(&existingUser).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "用户名已被注册"})
-		return
-	}
-
-	hashPassword, err := utils.HashPassword(user.Password)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "密码加密失败"})
-		return
-	}
-
-	if err := config.DB.Create(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "用户注册失败", "details": err.Error()})
+	if err := US.Register(user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 

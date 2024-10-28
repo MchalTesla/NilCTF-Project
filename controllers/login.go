@@ -4,15 +4,19 @@ import (
 	"net/http"
 	"github.com/gin-gonic/gin"
 	"AWD-Competition-Platform/config"
-	"AWD-Competition-Platform/models"
 	"AWD-Competition-Platform/middleware"
+	"AWD-Competition-Platform/services"
+	"AWD-Competition-Platform/repositories"
 )
 
 func Login(c *gin.Context) {
-	var user models.User
+	UR := repositories.NewUserRepository(config.DB)
+	US := services.NewUserService(UR)
+	
 	var input struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
+		Email string `json:"email"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -20,14 +24,11 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	if err := config.DB.Where("username = ?", input.Username).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "用户未注册"})
-		return
-	}
+	user , err := US.Login(input.Email, input.Username, input.Password)
 
-	if !user.CheckPassword(input.Password) {
-		c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "用户名或密码错误"})
-		return
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
+        return
 	}
 
 	token, err := middleware.GenerateToken(user.ID)

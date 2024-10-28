@@ -6,6 +6,7 @@ $(document).ready(function() {
 
             const username = $('#register-username').val();
             const password = $('#register-password').val();
+            const email = $('#register-email').val(); // 新增邮箱字段
 
             // 散列密码
             const hashedPassword = await hashPassword(password);
@@ -14,14 +15,13 @@ $(document).ready(function() {
                 type: 'POST',
                 url: '/api/register', // 你的注册API端点
                 contentType: 'application/json',
-                data: JSON.stringify({ username, password: hashedPassword }),
+                data: JSON.stringify({ username, password: hashedPassword, email }), // 包含邮箱字段
                 success: function(response) {
                     alert(response.message); // 显示成功消息
-                    // 重定向到登录页面
                     if (response.redirect) {
-                        window.location.href = response.redirect; // 重定向到登录页面
+                        window.location.href = response.redirect;
                     }
-                    $('#register-form')[0].reset(); // 可以选择在这里清空表单
+                    $('#register-form')[0].reset();
                 },
                 error: function(xhr) {
                     alert(xhr.responseJSON.message); // 显示错误消息
