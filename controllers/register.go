@@ -1,12 +1,13 @@
 package controllers
 
 import (
+	"NilCTF/config"
+	"NilCTF/models"
+	"NilCTF/repositories"
+	"NilCTF/services"
 	"net/http"
+
 	"github.com/gin-gonic/gin"
-	"AWD-Competition-Platform/config"
-	"AWD-Competition-Platform/models"
-	"AWD-Competition-Platform/services"
-	"AWD-Competition-Platform/repositories"
 )
 
 func Register(c *gin.Context) {

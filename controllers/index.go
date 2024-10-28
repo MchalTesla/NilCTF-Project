@@ -1,16 +1,17 @@
 package controllers
 
 import (
+	"NilCTF/config"
+	"NilCTF/models"
 	"net/http"
 	"time"
+
 	"github.com/gin-gonic/gin"
-	"AWD-Competition-Platform/config"
-	"AWD-Competition-Platform/models"
 )
 
 func IndexController(c *gin.Context) {
 	// middleware获取ID
-	ID, existing:= c.Get("ID")
+	ID, existing := c.Get("ID")
 	if !existing {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail"})
 	}

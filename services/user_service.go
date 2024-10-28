@@ -1,9 +1,9 @@
 package services
 
 import (
-	"AWD-Competition-Platform/models"
-	"AWD-Competition-Platform/repositories/interface"
-	"AWD-Competition-Platform/utils"
+	"NilCTF/models"
+	repositories_interface "NilCTF/repositories/interface"
+	"NilCTF/utils"
 	"fmt"
 )
 

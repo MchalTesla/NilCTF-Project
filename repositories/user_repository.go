@@ -1,8 +1,8 @@
 package repositories
 
 import (
-	"AWD-Competition-Platform/models"
-	"AWD-Competition-Platform/utils"
+	"NilCTF/models"
+	"NilCTF/utils"
 	"fmt"
 
 	"github.com/jinzhu/gorm"
@@ -19,7 +19,7 @@ func NewUserRepository(DB *gorm.DB) *UserRepository {
 
 func (r *UserRepository) Create(user models.User) error {
 	var existingUser models.User
-	
+
 	if err := r.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
 		return fmt.Errorf("ERR_EMAIL_TAKEN")
 	}

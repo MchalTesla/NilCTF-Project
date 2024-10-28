@@ -5,11 +5,12 @@ import (
 	"log"
 	"os"
 
-	"gopkg.in/yaml.v2" // 导入yaml解析库
+	"NilCTF/models" // 确保导入模型包
+	"NilCTF/utils"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"AWD-Competition-Platform/models" // 确保导入模型包
-	"AWD-Competition-Platform/utils"
+	"gopkg.in/yaml.v2" // 导入yaml解析库
 )
 
 var DB *gorm.DB
@@ -25,7 +26,7 @@ type Config struct {
 		SSLMode  string `yaml:"sslmode"`
 	} `yaml:"database"`
 	Jwt struct {
-		SecretKey          string `yaml:"secret_key"`         // 手动设置 JWT 密钥
+		SecretKey          string `yaml:"secret_key"`           // 手动设置 JWT 密钥
 		RandomSecretLength int    `yaml:"random_secret_length"` // 随机密钥长度
 	} `yaml:"jwt"`
 }

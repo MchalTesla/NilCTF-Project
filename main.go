@@ -1,8 +1,8 @@
 package main
 
 import (
-	_ "AWD-Competition-Platform/config"
-	"AWD-Competition-Platform/routes"
+	_ "NilCTF/config"
+	"NilCTF/routes"
 
 	"github.com/gin-gonic/gin"
 )

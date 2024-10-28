@@ -3,9 +3,10 @@ package controllers
 import (
 	"net/http"
 
+	"NilCTF/config"
+	"NilCTF/models"
+
 	"github.com/gin-gonic/gin"
-	"AWD-Competition-Platform/config"
-	"AWD-Competition-Platform/models"
 )
 
 func Competitions(c *gin.Context) {
@@ -31,8 +32,8 @@ func Competitions(c *gin.Context) {
 			"status":            competition.Status,
 			"start_time":        competition.StartTime,
 			"end_time":          competition.EndTime,
-			"participant_count": participantCount, // 参与队伍数量
-			"team_limit":        competition.TeamLimit, // 限制的队伍数量
+			"participant_count": participantCount,        // 参与队伍数量
+			"team_limit":        competition.TeamLimit,   // 限制的队伍数量
 			"max_team_size":     competition.MaxTeamSize, // 队伍最大人数限制
 		})
 	}

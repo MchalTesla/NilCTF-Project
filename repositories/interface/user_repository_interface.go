@@ -1,7 +1,7 @@
 package repositories_interface
 
 import (
-	"AWD-Competition-Platform/models"
+	"NilCTF/models"
 )
 
 type UserRepositoryInterface interface {

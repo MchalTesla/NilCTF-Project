@@ -6,7 +6,7 @@ package controllers
 
 // 	"github.com/gin-gonic/gin"
 // 	"github.com/jinzhu/gorm"
-// 	"AWD-Competition-Platform/models"
+// 	"NilCTF/models"
 // )
 
 // type AdminUserController struct {
@@ -20,7 +20,7 @@ package controllers
 // 	if pageStr == "" {
 // 		pageStr = "1"
 // 	}
-	
+
 // 	perPageStr := c.PostForm("per_page")
 // 	if perPageStr == "" {
 // 		perPageStr = "10"
