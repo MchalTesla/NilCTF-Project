@@ -10,7 +10,7 @@ import (
 )
 
 func Competitions(c *gin.Context) {
-	var competitions []models.Competitions
+	var competitions []models.Competition
 
 	// 获取所有未隐藏的比赛记录
 	if err := config.DB.Where("is_hidden = ?", false).Find(&competitions).Error; err != nil {

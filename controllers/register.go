@@ -20,7 +20,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	if err := US.Register(user); err != nil {
+	if err := US.Register(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}

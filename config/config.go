@@ -84,5 +84,5 @@ func ConnectDB() {
 	fmt.Println("数据库连接成功!")
 
 	// 自动迁移
-	DB.AutoMigrate(&models.User{}, &models.Competitions{}, &models.CompetitionUser{}, &models.GroupUser{}, &models.Group{})
+	DB.AutoMigrate(&models.User{}, &models.Competition{}, &models.CompetitionUser{}, &models.TeamUser{}, &models.Team{})
 }
