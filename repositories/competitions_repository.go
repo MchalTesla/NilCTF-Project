@@ -41,30 +41,29 @@ func (r *CompetitionRepository) Create(competition *models.Competition) error {
 
 // Read 根据ID、名称或所有者ID查找Competition
 func (r *CompetitionRepository) Read(ID uint, name string, ownerID uint) ([]models.Competition, error) {
-	var sliceExistingCompetition []models.Competition
+	var ExistingCompetitions []models.Competition
 
 	// 根据ID、名称或所有者ID查找比赛
 	var err error
 	switch {
 	case ID != 0:
-		err = r.DB.Find(&sliceExistingCompetition, ID).Error
+		err = r.DB.Find(&ExistingCompetitions, ID).Error
 	case name != "":
-		err = r.DB.Where("name = ?", name).Find(&sliceExistingCompetition).Error
+		err = r.DB.Where("name = ?", name).Find(&ExistingCompetitions).Error
 	case ownerID != 0:
-		err = r.DB.Where("owner_id = ?", ownerID).Find(&sliceExistingCompetition).Error
+		err = r.DB.Where("owner_id = ?", ownerID).Find(&ExistingCompetitions).Error
 	default:
 		return nil, error_code.ErrInvalidInput
 	}
 
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, error_code.ErrCompetitionNotFound
-		}
 		// 系统错误处理
 		return nil, error_code.ErrInternalServer
+	} else if len(ExistingCompetitions) == 0 {
+		return nil, error_code.ErrCompetitionNotFound
 	}
 
-	return sliceExistingCompetition, nil
+	return ExistingCompetitions, nil
 }
 
 // Update 更新Competition信息

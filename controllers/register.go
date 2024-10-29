@@ -1,18 +1,14 @@
 package controllers
 
 import (
-	"NilCTF/config"
 	"NilCTF/models"
-	"NilCTF/repositories"
-	"NilCTF/services"
+	"NilCTF/services/interface"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-func Register(c *gin.Context) {
-	UR := repositories.NewUserRepository(config.DB)
-	US := services.NewUserService(UR)
+func Register(c *gin.Context, US services_interface.UserServiceInterface) {
 
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {

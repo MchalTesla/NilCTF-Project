@@ -53,10 +53,9 @@ func (r *TeamUserRepository) Read(ID, teamID, userID uint) ([]models.TeamUser, e
 	}
 
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, error_code.ErrUserNotInTeam
-		}
 		return nil, error_code.ErrInternalServer
+	} else if len(teamUsers) == 0 {
+		return nil, error_code.ErrTeamNotInCompetition
 	}
 
 	return teamUsers, nil

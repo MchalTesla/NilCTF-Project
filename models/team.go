@@ -11,4 +11,5 @@ type Team struct {
 	OwnerID     uint   `gorm:"not null"`         // 创建者用户ID
 	// enum: active, inactive
 	Status      string `gorm:"default:'active'"` // 组的状态（例如：'active', 'inactive'）
+	Tag			string		// 标签
 }

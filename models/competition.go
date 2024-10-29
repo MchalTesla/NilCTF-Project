@@ -19,4 +19,8 @@ type Competition struct {
 	Nature      string    `gorm:"default:'test';not null"`           // 比赛性质（例如：'qualifying'，'semifinal'，'final'，'test'）
 	MaxTeamSize int       `gorm:"default:0"`          // 每支队伍的最大人数限制，0表示不限制，1表示个人赛
 	IsHidden    bool      `gorm:"default:false"`      // 比赛是否隐藏
+	Public		bool	  `gorm:"default:true"`		  // 比赛是否公开
+	Suspend		bool	  `gorm:"default:false"`	  // 比赛是否暂停
+	JoinLock	bool	  `gorm:"default:false"`	  // 比赛是否允许加入
+	Tag			string		// 标签
 }

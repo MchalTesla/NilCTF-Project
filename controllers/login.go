@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"NilCTF/error_code"
 	"NilCTF/middleware"
 	services_interface "NilCTF/services/interface"
 	"net/http"
@@ -11,20 +12,24 @@ import (
 func Login(c *gin.Context, US services_interface.UserServiceInterface) {
 
 	var input struct {
-		Username string `json:"username"`
+		LoginIdentifier string `json:"loginidentifier"`
 		Password string `json:"password"`
-		Email    string `json:"email"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "fail"})
+		c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": error_code.ErrInvalidInput.Error()})
 		return
 	}
 
-	user, err := US.Login(input.Email, input.Username, input.Password)
+	user, err := US.Login(input.LoginIdentifier, input.Password)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
+		httpStatus := http.StatusInternalServerError
+		if err != error_code.ErrInternalServer{
+			httpStatus = http.StatusUnauthorized
+			err =  error_code.ErrInvalidCredentials
+		}
+		c.JSON(httpStatus, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 

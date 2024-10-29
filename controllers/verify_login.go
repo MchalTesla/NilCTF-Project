@@ -6,5 +6,6 @@ import (
 )
 
 func VerifyLogin(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "success"})
+	userRole, _ := c.Get("userRole")
+	c.JSON(http.StatusOK, gin.H{"status": "success", "user_role": userRole})
 }

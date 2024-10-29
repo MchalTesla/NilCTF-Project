@@ -22,7 +22,7 @@ func (r *UserService) Register(user *models.User) error {
 	// 检查用户是否已存在
 	existingUser, err := r.UR.Read(0, user.Email, user.Username)
 	if err == nil && existingUser != nil {
-		return error_code.ErrEmailTaken // 返回邮箱已被占用的错误
+		return error_code.ErrEmailExists // 返回邮箱已被占用的错误
 	}
 
 	if err := r.UR.Create(user); err != nil {
@@ -32,17 +32,27 @@ func (r *UserService) Register(user *models.User) error {
 }
 
 // Login 用户登录
-func (r *UserService) Login(email string, username string, password string) (*models.User, error) {
-	existingUser, err := r.UR.Read(0, email, username)
+func (r *UserService) Login(loginIdentifier string, password string) (*models.User, error) {
+	var existingUser *models.User
+	var err error
+
+	// 判断 loginIdentifier 是用户名还是邮箱
+	if utils.IsValidEmail(loginIdentifier) {
+		existingUser, err = r.UR.Read(0, loginIdentifier, "") // 通过邮箱查找用户
+	} else {
+		existingUser, err = r.UR.Read(0, "", loginIdentifier) // 通过用户名查找用户
+	}
+
 	if err != nil {
-		if err == error_code.ErrUserNotFound {
-			return nil, error_code.ErrUserNotFound // 用户未找到
-		}
-		return nil, error_code.ErrInternalServer // 处理其他可能的错误
+		return nil, err // 处理其他可能的错误
+	}
+
+	if existingUser == nil {
+		return nil, error_code.ErrUserNotFound // 返回用户未找到的错误
 	}
 
 	if !utils.CheckPassword(existingUser.Password, password) {
-		return nil, error_code.ErrInvalidInput // 返回密码错误的错误
+		return nil, error_code.ErrInvalidCredentials // 返回密码错误的错误
 	}
 
 	return existingUser, nil

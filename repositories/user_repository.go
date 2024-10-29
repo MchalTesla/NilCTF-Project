@@ -5,6 +5,7 @@ import (
 	"NilCTF/models"
 	"NilCTF/utils"
 	"errors"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -20,32 +21,21 @@ func NewUserRepository(DB *gorm.DB) *UserRepository {
 
 // Create 插入新的用户记录
 func (r *UserRepository) Create(user *models.User) error {
-	// 检查用户是否已存在
-	if err := r.checkUserExists(user); err != nil {
-		return err
-	}
-
-	// 密码哈希化
-	hashedPassword, err := utils.HashPassword(user.Password)
-	if err != nil {
-		return error_code.ErrInternalServer
-	}
-	user.Password = hashedPassword
-
-	// 插入新用户
-	if err := r.DB.Create(user).Error; err != nil {
-		return error_code.ErrInternalServer
-	}
-	return nil
-}
-
-// checkUserExists 检查用户是否存在（根据邮箱或用户名）
-func (r *UserRepository) checkUserExists(user *models.User) error {
 	var existingUser models.User
+
+	// 检查用户名中是否有@符号
+	if !strings.Contains(user.Username, "@") {
+		return error_code.ErrInvalidUsername
+	}
+
+	// 检查邮箱是否符合规范
+	if !utils.IsValidEmail(user.Email) {
+		return error_code.ErrInvalidEmail
+	}
 
 	// 检查邮箱是否被占用
 	if err := r.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
-		return error_code.ErrEmailTaken
+		return error_code.ErrEmailExists
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		// 捕获潜在系统错误
 		return error_code.ErrInternalServer
@@ -59,6 +49,17 @@ func (r *UserRepository) checkUserExists(user *models.User) error {
 		return error_code.ErrInternalServer
 	}
 
+	// 密码哈希化
+	hashedPassword, err := utils.HashPassword(user.Password)
+	if err != nil {
+		return error_code.ErrInternalServer
+	}
+	user.Password = hashedPassword
+
+	// 插入新用户
+	if err := r.DB.Create(user).Error; err != nil {
+		return error_code.ErrInternalServer
+	}
 	return nil
 }
 
@@ -92,9 +93,36 @@ func (r *UserRepository) Read(ID uint, email, username string) (*models.User, er
 
 // Update 更新用户记录
 func (r *UserRepository) Update(user *models.User) error {
+	var existingUser models.User
 	// 检查用户ID是否有效
 	if user.ID == 0 {
 		return error_code.ErrInvalidInput
+	}
+
+	// 检查用户名中是否有@符号
+	if !strings.Contains(user.Username, "@") {
+		return error_code.ErrInvalidUsername
+	}
+
+	// 检查邮箱是否符合规范
+	if !utils.IsValidEmail(user.Email) {
+		return error_code.ErrInvalidEmail
+	}
+
+	// 检查邮箱是否被占用
+	if err := r.DB.Where("email = ? AND ID != ?", user.Email, user.ID).First(&existingUser).Error; err == nil {
+		return error_code.ErrEmailExists
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		// 捕获潜在系统错误
+		return error_code.ErrInternalServer
+	}
+
+	// 检查用户名是否已存在
+	if err := r.DB.Where("username = ? AND ID != ?", user.Username, user.ID).First(&existingUser).Error; err == nil {
+		return error_code.ErrUsernameExists
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		// 捕获潜在系统错误
+		return error_code.ErrInternalServer
 	}
 
 	if err := r.DB.Save(user).Error; err != nil {

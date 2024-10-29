@@ -53,10 +53,9 @@ func (r *CompetitionTeamRepository) Read(ID, competitionID, teamID uint) ([]mode
 	}
 
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, error_code.ErrUserAlreadyInTeam
-		}
 		return nil, error_code.ErrInternalServer
+	} else if len(competitionTeams) == 0 {
+		return nil, error_code.ErrTeamNotInCompetition
 	}
 	
 	return competitionTeams, nil

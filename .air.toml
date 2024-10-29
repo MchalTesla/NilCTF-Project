@@ -11,5 +11,5 @@ cmd = "go build -o tmp/main ." # 构建命令
 
 [watch]
 include_ext = ["go", "tpl", "tmpl", "yaml]
-exclude_dir = ["assets", "vendor"]
+exclude_dir = ["assets", "vendor", "frontend"]
 

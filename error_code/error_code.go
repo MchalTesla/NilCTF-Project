@@ -17,9 +17,12 @@ var (
 	// 用户相关错误
 	ErrUserAlreadyInTeam        = errors.New("ERR_USER_ALREADY_IN_TEAM")       // 用户已在队伍中
 	ErrUserNotInTeam            = errors.New("ERR_USER_NOT_IN_TEAM")           // 用户不在队伍中
-	ErrEmailTaken               = errors.New("ERR_EMAIL_TAKEN")                // 邮箱已被占用
+	ErrInvalidEmail               = errors.New("ERR_EMAIL_TAKEN")                // 邮箱无效
+	ErrEmailExists              = errors.New("ERR_EMAIL_EXISTS")                // 邮箱已存在
+	ErrInvalidUsername           = errors.New("ERR_USERNAME_EXISTS")            // 用户名无效
 	ErrUsernameExists           = errors.New("ERR_USERNAME_EXISTS")            // 用户名已存在
 	ErrUserNotFound             = errors.New("ERR_USER_NOT_FOUND")             // 未找到用户
+	ErrInvalidCredentials 		= errors.New("ERR_INVALID_CREDENTIALS") 	   // 用户名或密码错误
 	
 	// 通用错误
 	ErrInvalidInput             = errors.New("ERR_INVALID_INPUT")              // 无效输入

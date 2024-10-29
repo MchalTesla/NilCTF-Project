@@ -35,7 +35,7 @@ $(document).ready(function() {
         $('#login-form').submit(async function(event) {
             event.preventDefault(); // 阻止默认表单提交
 
-            const username = $('#login-username').val();
+            const loginidentifier = $('#login-identifier').val();
             const password = $('#login-password').val();
 
             // 散列密码
@@ -45,7 +45,7 @@ $(document).ready(function() {
                 type: 'POST',
                 url: '/api/login', // 你的登录API端点
                 contentType: 'application/json',
-                data: JSON.stringify({ username, password: hashedPassword }),
+                data: JSON.stringify({ loginidentifier, password: hashedPassword }),
                 success: function(response) {
                     // 保存 token 到 localStorage
                     if (response.token) {

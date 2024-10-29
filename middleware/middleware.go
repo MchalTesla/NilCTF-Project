@@ -25,6 +25,7 @@ type Claims struct {
 // - "all": 允许所有角色访问
 // - "admin": 仅允许管理员角色访问
 // - "user": 允许用户和管理员角色访问
+// - "organizer": 允许比赛创建者访问
 func JWTAuthMiddleware(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
@@ -57,6 +58,11 @@ func JWTAuthMiddleware(role string) gin.HandlerFunc {
 			}
 		case "user":
 			if user.Role != "user" {
+				respondWithError(c, error_code.ErrPermissionDenied)
+				return
+			}
+		case "organizer":
+			if user.Role != "organizer" {
 				respondWithError(c, error_code.ErrPermissionDenied)
 				return
 			}

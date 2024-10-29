@@ -6,5 +6,5 @@ import (
 
 type UserServiceInterface interface {
 	Register(user *models.User) error
-	Login(email string, username string, password string) (*models.User, error)
+	Login(loginIdentifier string, password string) (*models.User, error)
 }

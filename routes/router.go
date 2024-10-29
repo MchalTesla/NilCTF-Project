@@ -31,13 +31,15 @@ func Setuproutes(r *gin.Engine) {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 
-	r.POST("/api/register", controllers.Register)
+	r.POST("/api/register", func(c *gin.Context) {
+		controllers.Register(c, services.NewUserService(repositories.NewUserRepository(config.DB)))
+	})
 	// 登录界面，匿名函数负责初始化一些对象
 	r.POST("/api/login", func(c *gin.Context) {
 		controllers.Login(c, services.NewUserService(repositories.NewUserRepository(config.DB)))
 	})
-	r.POST("/api/index", middleware.JWTAuthMiddleware("admin"), controllers.IndexController) // 使用 JWT 中间件保护 Index 路由
+	r.POST("/api/index", middleware.JWTAuthMiddleware("all"), controllers.IndexController) // 使用 JWT 中间件保护 Index 路由
 	r.POST("/api/logout", controllers.Logout)
-	r.POST("api/verify_login", middleware.JWTAuthMiddleware("all"), controllers.VerifyLogin)
-	r.POST("api/competitions", controllers.Competitions)
+	r.POST("/api/verify_login", middleware.JWTAuthMiddleware("all"), controllers.VerifyLogin)
+	r.POST("/api/competitions", controllers.Competitions)
 }
