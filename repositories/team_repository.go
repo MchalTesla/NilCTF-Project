@@ -3,8 +3,9 @@ package repositories
 import (
 	"NilCTF/error_code"
 	"NilCTF/models"
+	"errors"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type TeamRepository struct {
@@ -22,7 +23,7 @@ func (r *TeamRepository) Create(team *models.Team) error {
 
 	// 检查团队是否已经存在
 	if err := r.DB.Where("name = ?", team.Name).First(&existingTeam).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// 创建新团队
 			if err := r.DB.Create(team).Error; err != nil {
 				// 系统错误处理
@@ -54,7 +55,7 @@ func (r *TeamRepository) Read(ID uint, name string) (*models.Team, error) {
 	}
 
 	if err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, error_code.ErrTeamNotFound
 		}
 		// 系统错误处理

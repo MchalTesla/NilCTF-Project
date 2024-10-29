@@ -8,9 +8,9 @@ import (
 	"NilCTF/models" // 确保导入模型包
 	"NilCTF/utils"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"gopkg.in/yaml.v2" // 导入yaml解析库
+	"gorm.io/gorm"
+	"gorm.io/driver/postgres"
 )
 
 var DB *gorm.DB
@@ -77,12 +77,12 @@ func ConnectDB() {
 	dsn := fmt.Sprintf("host=%s user=%s dbname=%s password=%s sslmode=%s",
 		AppConfig.Database.Host, AppConfig.Database.User, AppConfig.Database.Name, AppConfig.Database.Password, AppConfig.Database.SSLMode)
 
-	DB, err = gorm.Open("postgres", dsn)
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("数据库连接失败:", err)
 	}
 	fmt.Println("数据库连接成功!")
 
 	// 自动迁移
-	DB.AutoMigrate(&models.User{}, &models.Competition{}, &models.CompetitionUser{}, &models.TeamUser{}, &models.Team{})
+	DB.AutoMigrate(&models.User{}, &models.Competition{}, &models.CompetitionTeam{}, &models.TeamUser{}, &models.Team{})
 }

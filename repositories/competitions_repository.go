@@ -3,8 +3,9 @@ package repositories
 import (
 	"NilCTF/error_code"
 	"NilCTF/models"
+	"errors"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type CompetitionRepository struct {
@@ -22,7 +23,7 @@ func (r *CompetitionRepository) Create(competition *models.Competition) error {
 
 	// 检查比赛是否已存在
 	if err := r.DB.Where("name = ?", competition.Name).First(&existingCompetition).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// 创建新比赛
 			if err := r.DB.Create(competition).Error; err != nil {
 				// 系统错误处理
@@ -56,7 +57,7 @@ func (r *CompetitionRepository) Read(ID uint, name string, ownerID uint) ([]mode
 	}
 
 	if err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, error_code.ErrCompetitionNotFound
 		}
 		// 系统错误处理

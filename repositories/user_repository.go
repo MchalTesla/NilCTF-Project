@@ -4,8 +4,9 @@ import (
 	"NilCTF/error_code"
 	"NilCTF/models"
 	"NilCTF/utils"
+	"errors"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type UserRepository struct {
@@ -45,7 +46,7 @@ func (r *UserRepository) checkUserExists(user *models.User) error {
 	// 检查邮箱是否被占用
 	if err := r.DB.Where("email = ?", user.Email).First(&existingUser).Error; err == nil {
 		return error_code.ErrEmailTaken
-	} else if !gorm.IsRecordNotFoundError(err) {
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		// 捕获潜在系统错误
 		return error_code.ErrInternalServer
 	}
@@ -53,7 +54,7 @@ func (r *UserRepository) checkUserExists(user *models.User) error {
 	// 检查用户名是否已存在
 	if err := r.DB.Where("username = ?", user.Username).First(&existingUser).Error; err == nil {
 		return error_code.ErrUsernameExists
-	} else if !gorm.IsRecordNotFoundError(err) {
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		// 捕获潜在系统错误
 		return error_code.ErrInternalServer
 	}
@@ -79,7 +80,7 @@ func (r *UserRepository) Read(ID uint, email, username string) (*models.User, er
 
 	// 执行查询
 	if err := query.First(&user).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, error_code.ErrUserNotFound
 		}
 		// 捕获系统错误

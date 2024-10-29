@@ -5,7 +5,7 @@ package controllers
 // 	"strconv"
 
 // 	"github.com/gin-gonic/gin"
-// 	"github.com/jinzhu/gorm"
+// 	"gorm.io/gorm"
 // 	"NilCTF/models"
 // )
 

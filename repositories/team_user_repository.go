@@ -3,8 +3,9 @@ package repositories
 import (
 	"NilCTF/error_code"
 	"NilCTF/models"
+	"errors"
 
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 )
 
 type TeamUserRepository struct {
@@ -22,7 +23,7 @@ func (r *TeamUserRepository) Create(teamUser *models.TeamUser) error {
 
 	if err := r.DB.Where("teamid = ? AND userid = ?", teamUser.TeamID, teamUser.UserID).First(&existingTeamUser).Error; err == nil {
 		return error_code.ErrUserAlreadyInTeam
-	}else if !gorm.IsRecordNotFoundError(err) {
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return error_code.ErrInternalServer
 	}
 
@@ -33,7 +34,7 @@ func (r *TeamUserRepository) Create(teamUser *models.TeamUser) error {
 }
 
 // Read 查找队伍和用户的映射
-func (r *TeamUserRepository) Read(ID, UserID, TeamID uint) ([]models.TeamUser, error) {
+func (r *TeamUserRepository) Read(ID, teamID, userID uint) ([]models.TeamUser, error) {
 	var teamUsers []models.TeamUser
 
 	// 根据ID、TeamID或UserID查找
@@ -41,18 +42,18 @@ func (r *TeamUserRepository) Read(ID, UserID, TeamID uint) ([]models.TeamUser, e
 	switch {
 	case ID != 0:
 		err = r.DB.Find(&teamUsers, ID).Error
-	case TeamID != 0 && UserID != 0:
-		err = r.DB.Where("teamid = ? AND userid = ?", TeamID, UserID).Find(&teamUsers).Error
-	case TeamID != 0:
-		err = r.DB.Where("teamid = ?", TeamID).Find(&teamUsers).Error
-	case UserID != 0:
-		err = r.DB.Where("userid = ?", UserID).Find(&teamUsers).Error
+	case teamID != 0 && userID != 0:
+		err = r.DB.Where("teamid = ? AND userid = ?", teamID, userID).Find(&teamUsers).Error
+	case teamID != 0:
+		err = r.DB.Where("teamid = ?", teamID).Find(&teamUsers).Error
+	case userID != 0:
+		err = r.DB.Where("userid = ?", userID).Find(&teamUsers).Error
 	default:
 		return nil, error_code.ErrInvalidInput
 	}
 
 	if err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, error_code.ErrUserNotInTeam
 		}
 		return nil, error_code.ErrInternalServer

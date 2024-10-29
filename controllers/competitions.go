@@ -22,7 +22,7 @@ func Competitions(c *gin.Context) {
 	for _, competition := range competitions {
 		var participantCount int64
 		// 获取参加当前比赛的队伍数量
-		config.DB.Model(&models.CompetitionUser{}).Where("competition_id = ?", competition.ID).Count(&participantCount)
+		config.DB.Model(&models.CompetitionTeam{}).Where("competition_id = ?", competition.ID).Count(&participantCount)
 
 		response = append(response, gin.H{
 			"name":              competition.Name,
