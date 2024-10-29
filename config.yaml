@@ -6,5 +6,5 @@ database:
   sslmode: "disable"
 
 jwt:
-  # secret_key: "your_secret_key"  # 可选: 手动设置 JWT 密钥，默认是注释掉的
+  secret_key: "your_secret_key"  # 可选: 手动设置 JWT 密钥，默认是注释掉的
   random_secret_length: 32  # 随机密钥长度

@@ -36,8 +36,8 @@ func Setuproutes(r *gin.Engine) {
 	r.POST("/api/login", func(c *gin.Context) {
 		controllers.Login(c, services.NewUserService(repositories.NewUserRepository(config.DB)))
 	})
-	r.POST("/api/index", middleware.JWTAuthMiddleware(), controllers.IndexController) // 使用 JWT 中间件保护 Index 路由
+	r.POST("/api/index", middleware.JWTAuthMiddleware("admin"), controllers.IndexController) // 使用 JWT 中间件保护 Index 路由
 	r.POST("/api/logout", controllers.Logout)
-	r.POST("api/verify_login", middleware.JWTAuthMiddleware(), controllers.VerifyLogin)
+	r.POST("api/verify_login", middleware.JWTAuthMiddleware("all"), controllers.VerifyLogin)
 	r.POST("api/competitions", controllers.Competitions)
 }

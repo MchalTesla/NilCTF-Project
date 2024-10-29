@@ -83,6 +83,19 @@ func ConnectDB() {
 	}
 	fmt.Println("数据库连接成功!")
 
-	// 自动迁移
-	DB.AutoMigrate(&models.User{}, &models.Competition{}, &models.CompetitionTeam{}, &models.TeamUser{}, &models.Team{})
+	// 定义需要自动迁移的模型列表
+	modelsToMigrate := []interface{}{
+        &models.User{},
+        &models.Competition{},
+        &models.CompetitionTeam{},
+        &models.TeamUser{},
+        &models.Team{},
+    }
+    // 调用自动迁移函数
+    err = DB.AutoMigrate(modelsToMigrate...)
+    if err != nil {
+        log.Fatal("自动迁移失败:", err)
+    } else {
+        fmt.Println("自动迁移成功!")
+    }
 }

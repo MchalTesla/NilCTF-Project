@@ -11,14 +11,14 @@ import (
 
 func IndexController(c *gin.Context) {
 	// middleware获取ID
-	ID, existing := c.Get("ID")
+	userID, existing := c.Get("userID")
 	if !existing {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail"})
 	}
 	// 创建一个user变量，用于存储用户信息
 	var user models.User
 	// 从数据库中获取用户名
-	if err := config.DB.Where("ID = ?", ID).Find(&user).Error; err != nil {
+	if err := config.DB.Where("ID = ?", userID).Find(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail"})
 	}
 

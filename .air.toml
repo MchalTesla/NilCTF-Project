@@ -10,6 +10,6 @@ bin = "tmp/main" # 可执行文件输出路径
 cmd = "go build -o tmp/main ." # 构建命令
 
 [watch]
-include_ext = ["go", "tpl", "tmpl", "html", "css", "js"]
+include_ext = ["go", "tpl", "tmpl", "yaml]
 exclude_dir = ["assets", "vendor"]
 

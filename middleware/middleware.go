@@ -3,6 +3,7 @@ package middleware
 import (
 	"NilCTF/config"
 	"NilCTF/error_code"
+	"NilCTF/models"
 	"NilCTF/repositories"
 	"net/http"
 	"strings"
@@ -19,7 +20,12 @@ type Claims struct {
 }
 
 // JWTAuthMiddleware JWT 认证中间件
-func JWTAuthMiddleware() gin.HandlerFunc {
+// 参数用于验证用户的 JWT 并检查角色权限
+// role 参数接受以下值：
+// - "all": 允许所有角色访问
+// - "admin": 仅允许管理员角色访问
+// - "user": 允许用户和管理员角色访问
+func JWTAuthMiddleware(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
 		if !isValidTokenHeader(tokenString) {
@@ -35,13 +41,33 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		if _, err := repositories.NewUserRepository(config.DB).Read(claims.ID, "", ""); err != nil {
+		var user *models.User
+		if user, err = repositories.NewUserRepository(config.DB).Read(claims.ID, "", ""); err != nil {
 			respondWithError(c, error_code.ErrUserNotFound)
 			return
 		}
 
+		// 判断用户角色，如果不符合某个角色，就限制访问
+		switch role {
+		case "all": 
+		case "admin":
+			if user.Role != "admin" {
+				respondWithError(c, error_code.ErrPermissionDenied)
+				return
+			}
+		case "user":
+			if user.Role != "user" {
+				respondWithError(c, error_code.ErrPermissionDenied)
+				return
+			}
+		}
+
 		// 将用户信息保存到上下文中
-		c.Set("ID", claims.ID)
+		c.Set("userID", user.ID)
+		c.Set("userName", user.Username)
+		c.Set("useremail", user.Email)
+		c.Set("userStatus", user.Status)
+		c.Set("userRole", user.Role)
 		c.Next()
 	}
 }
