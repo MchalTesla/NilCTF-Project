@@ -17,11 +17,14 @@ func NewCompetitionTeamRepository(DB *gorm.DB) *CompetitionTeamRepository {
 	return &CompetitionTeamRepository{DB: DB}
 }
 
-// Create 创建比赛和队伍的映射
+// Create 创建比赛和队伍的映射 ID必须为0
 func (r *CompetitionTeamRepository) Create(competitionTeam *models.CompetitionTeam) error {
-	var existingCompetitionTeam models.CompetitionTeam
+	//判断ID是否合规
+	if competitionTeam.ID != 0 {
+		return error_code.ErrInvalidID
+	}
 
-	if err := r.DB.Where("competition = ? AND teamid = ?", competitionTeam.CompetitionID, competitionTeam.TeamID).First(&existingCompetitionTeam).Error; err == nil {
+	if err := r.DB.Where("competition = ? AND teamid = ?", competitionTeam.CompetitionID, competitionTeam.TeamID).First(&models.CompetitionTeam{}).Error; err == nil {
 		return error_code.ErrTeamAlreadyInCompetition
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return error_code.ErrInternalServer
@@ -61,18 +64,21 @@ func (r *CompetitionTeamRepository) Read(ID, competitionID, teamID uint) ([]mode
 	return competitionTeams, nil
 }
 
-// Update 更新比赛和队伍的映射, 参数 *models.CompetitionTeam{ID, ...}
+// Update 更新比赛和队伍的映射, 不能更改CompetitionID和TeamID, ID、CompetitionID、TeamID必须存在
 func (r *CompetitionTeamRepository) Update(competitionTeam *models.CompetitionTeam) error {
 	var existingCompetitionTeam models.CompetitionTeam
 	//检查比赛-组ID是否有效
 	if competitionTeam.ID == 0 {
-		return error_code.ErrInvalidInput
+		return error_code.ErrInvalidID
 	}
 
 	// 检查比赛-组ID是否存在
 	if err := r.DB.Where("id = ?", competitionTeam.ID).First(&existingCompetitionTeam).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return error_code.ErrTeamNotInCompetition
+		// 判断比赛ID和队伍ID是否和数据库中记录的一样，如果不一样，返回错误
+		} else if competitionTeam.CompetitionID != existingCompetitionTeam.CompetitionID || competitionTeam.TeamID != existingCompetitionTeam.TeamID {
+			return error_code.ErrInvalidInput
 		}
 		return error_code.ErrInternalServer
 	}
@@ -83,9 +89,16 @@ func (r *CompetitionTeamRepository) Update(competitionTeam *models.CompetitionTe
 	return nil
 }
 
-// Delete 删除队伍和用户的映射
+// Delete 删除队伍和用户的映射, ID必须存在
 func (r *CompetitionTeamRepository) Delete(competitionTeam *models.CompetitionTeam) error {
+	//判断ID是否有效
+	if competitionTeam.ID == 0 {
+		return error_code.ErrInvalidID
+	}
 	if err := r.DB.Delete(competitionTeam).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return error_code.ErrTeamNotInCompetition
+		}
 		return error_code.ErrInternalServer
 	}
 	return nil

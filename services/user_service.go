@@ -40,7 +40,7 @@ func (r *UserService) Login(loginIdentifier string, password string) (*models.Us
 	// 判断 loginIdentifier 是用户名还是邮箱
 	if utils.IsValidEmail(loginIdentifier) {
 		existingUser, err = r.UR.Read(0, loginIdentifier, "") // 通过邮箱查找用户
-	} else if utils.IsValidUsername(loginIdentifier){
+	} else if utils.IsValidName(loginIdentifier){
 		existingUser, err = r.UR.Read(0, "", loginIdentifier) // 通过用户名查找用户
 	} else {
 		return nil, error_code.ErrInvalidInput
@@ -66,6 +66,7 @@ func (r *UserService) Update(userID uint, updates dto.UserUpdate) error{
 	var user models.User
 
 	// 根据传入的字段更新值
+	user.ID = userID
 	if updates.Username != nil {
 		user.Username = *updates.Username
 	}

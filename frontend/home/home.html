@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户主页</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            text-align: center;
+        }
+        .container h1 {
+            margin-bottom: 20px;
+        }
+        .user-info {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .user-info p {
+            margin: 8px 0;
+        }
+        .error {
+            color: red;
+        }
+        .modify-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .modify-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>用户主页</h1>
+    <div id="user-info" class="user-info"></div>
+    <div id="error-message" class="error"></div>
+    <button class="modify-btn" onclick="navigateToModify()">修改信息</button>
+</div>
+
+<script>
+    // 从后端获取用户信息
+    async function fetchUserInfo() {
+        try {
+            const token = localStorage.getItem('token'); // 从 localStorage 获取 token
+            const response = await fetch('/api/home', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? 'Bearer ' + token : '', // 添加 Authorization 头
+                }
+            });
+
+            const data = await response.json();
+            
+            if (response.ok && data.status === "success") {
+                const userInfo = data.message;
+                document.getElementById('user-info').innerHTML = `
+                    <p><strong>创建时间:</strong> ${userInfo.created_at}</p>
+                    <p><strong>用户名:</strong> ${userInfo.username}</p>
+                    <p><strong>描述:</strong> ${userInfo.description}</p>
+                    <p><strong>邮箱:</strong> ${userInfo.email}</p>
+                    <p><strong>状态:</strong> ${userInfo.status}</p>
+                    <p><strong>角色:</strong> ${userInfo.role}</p>
+                    <p><strong>标签:</strong> ${userInfo.tag}</p>
+                `;
+            } else {
+                document.getElementById('error-message').innerText = data.message || "无法获取用户信息";
+            }
+        } catch (error) {
+            document.getElementById('error-message').innerText = "请求失败，请稍后重试";
+        }
+    }
+
+    // 页面加载时获取用户信息
+    window.onload = fetchUserInfo;
+
+    // 跳转到修改信息页面
+    function navigateToModify() {
+        window.location.href = '/home/modify';
+    }
+</script>
+<script src="js/utils.js"></script>
+
+</body>
+</html>

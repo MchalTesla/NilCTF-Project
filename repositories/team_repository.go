@@ -3,6 +3,7 @@ package repositories
 import (
 	"NilCTF/error_code"
 	"NilCTF/models"
+	"NilCTF/utils"
 	"errors"
 
 	"gorm.io/gorm"
@@ -17,14 +18,28 @@ func NewTeamRepository(DB *gorm.DB) *TeamRepository {
 	return &TeamRepository{DB: DB}
 }
 
-// Create 创建Team
+// Create 创建Team，ID必须为0
 func (r *TeamRepository) Create(team *models.Team) error {
-	var existingTeams models.Team
 
-	// 检查团队是否已经存在
-	if err := r.DB.Where("name = ?", team.Name).First(&existingTeams).Error; err != nil {
+	// 判断ID是否有效
+	if team.ID != 0 {
+		return error_code.ErrInvalidID
+	}
+
+	// 检查队伍名中是否符合规范
+	if !utils.IsValidName(team.Name) {
+		return error_code.ErrInvalidInput
+	}
+
+	// 检查队伍描述是否符合规范
+	if !utils.IsValidDescription(team.Description) {
+		return error_code.ErrInvalidDescription
+	}
+
+	// 检查队伍是否已经存在
+	if err := r.DB.Where("name = ?", team.Name).First(&models.Team{}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// 创建新团队
+			// 创建新队伍
 			if err := r.DB.Create(team).Error; err != nil {
 				// 系统错误处理
 				return error_code.ErrInternalServer
@@ -35,7 +50,7 @@ func (r *TeamRepository) Create(team *models.Team) error {
 		return error_code.ErrInternalServer
 	}
 
-	// 团队已存在
+	// 队伍已存在
 	return error_code.ErrTeamAlreadyExists
 }
 
@@ -43,7 +58,7 @@ func (r *TeamRepository) Create(team *models.Team) error {
 func (r *TeamRepository) Read(ID uint, name string) ([]models.Team, error) {
 	var existingTeams []models.Team
 
-	// 根据ID或名称查找团队
+	// 根据ID或名称查找队伍
 	var err error
 	switch {
 	case ID != 0:
@@ -64,23 +79,32 @@ func (r *TeamRepository) Read(ID uint, name string) ([]models.Team, error) {
 	return existingTeams, nil
 }
 
-// Update 更新队伍信息, 参数 *models.Team{ID, ...}
+// Update 更新队伍信息, ID必须存在
 func (r *TeamRepository) Update(team *models.Team) error {
-	var existingTeam models.Team
-	// 检查团队ID是否有效
+	// 检查队伍ID是否有效
 	if team.ID == 0 {
-		return error_code.ErrInvalidInput
+		return error_code.ErrInvalidID
 	}
 
-	// 检查团队ID是否存在
-	if err := r.DB.Where("id = ?", team.ID).First(&existingTeam).Error; err != nil {
+	// 检查队伍ID是否存在
+	if err := r.DB.Where("id = ?", team.ID).First(&models.Team{}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return error_code.ErrTeamNotFound
 		}
 		return error_code.ErrInternalServer
 	}
 
-	// 更新团队信息
+	// 检查队伍名中是否符合规范
+	if !utils.IsValidName(team.Name) {
+		return error_code.ErrInvalidInput
+	}
+
+	// 检查队伍描述是否符合规范
+	if !utils.IsValidDescription(team.Description) {
+		return error_code.ErrInvalidDescription
+	}
+
+	// 更新队伍信息
 	if err := r.DB.Model(team).Updates(team).Error; err != nil {
 		// 系统错误处理
 		return error_code.ErrInternalServer
@@ -88,9 +112,17 @@ func (r *TeamRepository) Update(team *models.Team) error {
 	return nil
 }
 
-// Delete 删除队伍
+// Delete 删除队伍， ID必须存在
 func (r *TeamRepository) Delete(team *models.Team) error {
+	// 判断ID是否有效
+	if team.ID == 0 {
+		return error_code.ErrInvalidID
+	}
+
 	if err := r.DB.Delete(team).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return error_code.ErrTeamNotFound
+		}
 		// 系统错误处理
 		return error_code.ErrInternalServer
 	}

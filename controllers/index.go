@@ -9,7 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func IndexController(c *gin.Context) {
+type IndexControllers struct {
+
+}
+
+func (r *IndexControllers) Index(c *gin.Context) {
 	// middleware获取ID
 	userID, existing := c.Get("userID")
 	if !existing {

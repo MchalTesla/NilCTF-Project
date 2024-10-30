@@ -63,7 +63,7 @@
                     // 在导航栏添加用户信息和 "自己" 的链接
                     $('#nav-items').append(`
                         <li class="nav-item">
-                            <a class="nav-link" href="/profile">欢迎, ${response.username}</a>
+                            <a class="nav-link" href="/home">欢迎, ${response.username}</a>
                         </li>
                     `);
                 },
@@ -83,7 +83,7 @@
             // 获取用户角色
             $.ajax({
                 type: 'POST',
-                url: '/api/verify_login',
+                url: '/api/user/verify',
                 success: function(response) {
                     if (response.user_role === 'admin') {
                         $('#admin-link').show(); // 显示平台管理链接
@@ -97,7 +97,7 @@
             // 获取比赛列表
             $.ajax({
                 type: 'POST',
-                url: '/api/competitions',
+                url: '/api/competition/list_competition',
                 success: function(response) {
                     const competitionList = $('#competition-list');
                     response.message.forEach(function(competition) {

@@ -17,12 +17,16 @@ func NewCompetitionRepository(DB *gorm.DB) *CompetitionRepository {
 	return &CompetitionRepository{DB: DB}
 }
 
-// Create 创建Competition
+// Create 创建Competition， ID必须为0
 func (r *CompetitionRepository) Create(competition *models.Competition) error {
-	var existingCompetition models.Competition
+
+	// 判断ID是否合规
+	if competition.ID != 0 {
+		return error_code.ErrInvalidID
+	}
 
 	// 检查比赛是否已存在
-	if err := r.DB.Where("name = ?", competition.Name).First(&existingCompetition).Error; err != nil {
+	if err := r.DB.Where("name = ?", competition.Name).First(&models.Competition{}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// 创建新比赛
 			if err := r.DB.Create(competition).Error; err != nil {
@@ -66,16 +70,15 @@ func (r *CompetitionRepository) Read(ID uint, name string, ownerID uint) ([]mode
 	return ExistingCompetitions, nil
 }
 
-// Update 更新Competition信息, 参数 *models.Competition{ID, ...}
+// Update 更新Competition信息, ID必须存在
 func (r *CompetitionRepository) Update(competition *models.Competition) error {
-	var existingCompetition models.Competition
 	// 检查比赛ID是否有效
 	if competition.ID == 0 {
-		return error_code.ErrInvalidInput
+		return error_code.ErrInvalidID
 	}
 
 	// 检查比赛ID是否存在
-	if err := r.DB.Where("id = ?", competition.ID).First(&existingCompetition).Error; err == nil {
+	if err := r.DB.Where("id = ?", competition.ID).First(&models.Competition{}).Error; err == nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return error_code.ErrUserNotFound
 		}
@@ -90,9 +93,17 @@ func (r *CompetitionRepository) Update(competition *models.Competition) error {
 	return nil
 }
 
-// Delete 删除Competition
+// Delete 删除Competition， ID必须存在
 func (r *CompetitionRepository) Delete(competition *models.Competition) error {
+	// 判断ID是否有效
+	if competition.ID == 0 {
+		return error_code.ErrInvalidID
+	}
+	
 	if err := r.DB.Delete(competition).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return error_code.ErrCompetitionNotFound
+		}
 		// 系统错误处理
 		return error_code.ErrInternalServer
 	}

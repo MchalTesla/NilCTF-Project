@@ -4,7 +4,7 @@ import (
 	"regexp"
 )
 
-// IsValidUsername 验证用户名的有效性
+// IsValidName 验证名子的有效性
 func IsValidName(username string) bool {
     // 用户名规则：
     // 1. 长度在 3 到 20 个字符之间

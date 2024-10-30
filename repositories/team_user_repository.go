@@ -17,12 +17,16 @@ func NewTeamUserRepository(DB *gorm.DB) *TeamUserRepository {
 	return &TeamUserRepository{DB: DB}
 }
 
-// Create 创建队伍和用户的映射
+// Create 创建队伍和用户的映射 ID必须为0
 func (r *TeamUserRepository) Create(teamUser *models.TeamUser) error {
-	var existingTeamUser models.TeamUser
 
-	// 查找是否有该映射，如果有返回已存在，如果没找到，就继续
-	if err := r.DB.Where("teamid = ? AND userid = ?", teamUser.TeamID, teamUser.UserID).First(&existingTeamUser).Error; err == nil {
+	// 判断ID是否有效
+	if teamUser.ID != 0 {
+		return error_code.ErrInvalidID
+	}
+
+	// 查找是否有该映射，如果不存在，继续
+	if err := r.DB.Where("teamid = ? AND userid = ?", teamUser.TeamID, teamUser.UserID).First(&models.TeamUser{}).Error; err == nil {
 		return error_code.ErrUserAlreadyInTeam
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return error_code.ErrInternalServer
@@ -62,18 +66,21 @@ func (r *TeamUserRepository) Read(ID, teamID, userID uint) ([]models.TeamUser, e
 	return teamUsers, nil
 }
 
-// Update 更新队伍和用户的映射, 参数 *models.TeamUser{ID, ...}
+// Update 更新队伍和用户的映射的其他属性，不能更改TeamID和UserID, ID、UserID、TeamID必须存在
 func (r *TeamUserRepository) Update(teamUser *models.TeamUser) error {
 	var existingTeamUser models.TeamUser
 	// 检查组-用户ID是否有效
 	if  teamUser.ID == 0 {
-		return error_code.ErrInvalidInput
+		return error_code.ErrInvalidID
 	}
 
-	// 检查组-用户ID是否存在
+	// 检查组-用户ID是否存在， 如果存在，继续
 	if err := r.DB.Where("id = ?", teamUser.ID).First(&existingTeamUser).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return error_code.ErrUserNotInTeam
+		// 判断队伍ID和用户ID是否和数据库中记录的一样，如果不一样，返回错误
+		} else if teamUser.TeamID != existingTeamUser.TeamID || teamUser.UserID != existingTeamUser.UserID {
+			return error_code.ErrInvalidInput
 		}
 		return error_code.ErrInternalServer
 	}
@@ -84,9 +91,17 @@ func (r *TeamUserRepository) Update(teamUser *models.TeamUser) error {
 	return nil
 }
 
-// Delete 删除队伍和用户的映射
+// Delete 删除队伍和用户的映射 ID必须存在
 func (r *TeamUserRepository) Delete(teamUser *models.TeamUser) error {
+	// 判断ID是否有效
+	if teamUser.ID == 0 {
+		return error_code.ErrInvalidID
+	}
+
 	if err := r.DB.Delete(teamUser).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return error_code.ErrUserNotInTeam
+		}
 		return error_code.ErrInternalServer
 	}
 	return nil

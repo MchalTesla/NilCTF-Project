@@ -9,7 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Competitions(c *gin.Context) {
+type CompetitionControllers struct {
+
+}
+
+func (r *CompetitionControllers) ListCompetition(c *gin.Context) {
 	var competitions []models.Competition
 
 	// 获取所有未隐藏的比赛记录
