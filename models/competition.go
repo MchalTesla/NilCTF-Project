@@ -8,7 +8,7 @@ import (
 
 type Competition struct {
 	gorm.Model
-	Name        string    `gorm:"not null"`           // 比赛名称
+	Name        string    `gorm:"unique;not null"`           // 比赛名称
 	Description string    `gorm:"type:text"`          // 比赛描述
 	StartTime   time.Time `gorm:"not null"`           // 比赛开始时间
 	EndTime     time.Time `gorm:"not null"`           // 比赛结束时间

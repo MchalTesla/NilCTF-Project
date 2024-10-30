@@ -36,22 +36,12 @@ func (r *TeamRepository) Create(team *models.Team) error {
 		return error_code.ErrInvalidDescription
 	}
 
-	// 检查队伍是否已经存在
-	if err := r.DB.Where("name = ?", team.Name).First(&models.Team{}).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// 创建新队伍
-			if err := r.DB.Create(team).Error; err != nil {
-				// 系统错误处理
-				return error_code.ErrInternalServer
-			}
-			return nil
-		}
+	// 创建新队伍
+	if err := r.DB.Create(team).Error; err != nil {
 		// 系统错误处理
 		return error_code.ErrInternalServer
 	}
-
-	// 队伍已存在
-	return error_code.ErrTeamAlreadyExists
+	return nil
 }
 
 // Read 根据ID或者队伍名查找Team

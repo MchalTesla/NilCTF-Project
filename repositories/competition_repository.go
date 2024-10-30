@@ -85,6 +85,14 @@ func (r *CompetitionRepository) Update(competition *models.Competition) error {
 		return error_code.ErrInternalServer
 	}
 
+	// 检查比赛名字是否存在
+	if err := r.DB.Where("name = ? AND id != ?", competition.Name, competition.ID).First(&models.Competition{}).Error; err == nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return error_code.ErrCompetitionAlreadyExists
+		}
+		return error_code.ErrInternalServer
+	}
+
 	// 更新比赛信息
 	if err := r.DB.Model(competition).Updates(competition).Error; err != nil {
 		// 系统错误处理
