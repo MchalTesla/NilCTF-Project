@@ -61,9 +61,23 @@ func (r *CompetitionTeamRepository) Read(ID, competitionID, teamID uint) ([]mode
 	return competitionTeams, nil
 }
 
-// Update 更新比赛和队伍的映射
+// Update 更新比赛和队伍的映射, 参数 *models.CompetitionTeam{ID, ...}
 func (r *CompetitionTeamRepository) Update(competitionTeam *models.CompetitionTeam) error {
-	if err := r.DB.Save(competitionTeam).Error; err != nil {
+	var existingCompetitionTeam models.CompetitionTeam
+	//检查比赛-组ID是否有效
+	if competitionTeam.ID == 0 {
+		return error_code.ErrInvalidInput
+	}
+
+	// 检查比赛-组ID是否存在
+	if err := r.DB.Where("id = ?", competitionTeam.ID).First(&existingCompetitionTeam).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return error_code.ErrTeamNotInCompetition
+		}
+		return error_code.ErrInternalServer
+	}
+
+	if err := r.DB.Model(competitionTeam).Updates(competitionTeam).Error; err != nil {
 		return error_code.ErrInternalServer
 	}
 	return nil

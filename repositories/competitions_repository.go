@@ -66,15 +66,24 @@ func (r *CompetitionRepository) Read(ID uint, name string, ownerID uint) ([]mode
 	return ExistingCompetitions, nil
 }
 
-// Update 更新Competition信息
+// Update 更新Competition信息, 参数 *models.Competition{ID, ...}
 func (r *CompetitionRepository) Update(competition *models.Competition) error {
-	// 检查比赛ID是否存在
+	var existingCompetition models.Competition
+	// 检查比赛ID是否有效
 	if competition.ID == 0 {
 		return error_code.ErrInvalidInput
 	}
 
+	// 检查比赛ID是否存在
+	if err := r.DB.Where("id = ?", competition.ID).First(&existingCompetition).Error; err == nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return error_code.ErrUserNotFound
+		}
+		return error_code.ErrInternalServer
+	}
+
 	// 更新比赛信息
-	if err := r.DB.Save(competition).Error; err != nil {
+	if err := r.DB.Model(competition).Updates(competition).Error; err != nil {
 		// 系统错误处理
 		return error_code.ErrInternalServer
 	}

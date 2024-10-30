@@ -64,15 +64,24 @@ func (r *TeamRepository) Read(ID uint, name string) ([]models.Team, error) {
 	return existingTeams, nil
 }
 
-// Update 更新队伍信息
+// Update 更新队伍信息, 参数 *models.Team{ID, ...}
 func (r *TeamRepository) Update(team *models.Team) error {
-	// 检查团队ID是否存在
+	var existingTeam models.Team
+	// 检查团队ID是否有效
 	if team.ID == 0 {
 		return error_code.ErrInvalidInput
 	}
 
+	// 检查团队ID是否存在
+	if err := r.DB.Where("id = ?", team.ID).First(&existingTeam).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return error_code.ErrTeamNotFound
+		}
+		return error_code.ErrInternalServer
+	}
+
 	// 更新团队信息
-	if err := r.DB.Save(team).Error; err != nil {
+	if err := r.DB.Model(team).Updates(team).Error; err != nil {
 		// 系统错误处理
 		return error_code.ErrInternalServer
 	}

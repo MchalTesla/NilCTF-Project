@@ -91,12 +91,20 @@ func (r *UserRepository) Read(ID uint, email, username string) (*models.User, er
 	return &user, nil
 }
 
-// Update 更新用户记录
+// Update 更新用户记录, 参数：*models.User{ID, ...}
 func (r *UserRepository) Update(user *models.User) error {
 	var existingUser models.User
 	// 检查用户ID是否有效
 	if user.ID == 0 {
 		return error_code.ErrInvalidInput
+	}
+
+	// 检查用户ID是否存在
+	if err := r.DB.Where("id = ?", user.ID).First(&existingUser).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return error_code.ErrUserNotFound
+		}
+		return error_code.ErrInternalServer
 	}
 
 	// 检查用户名中是否有@符号
@@ -110,7 +118,7 @@ func (r *UserRepository) Update(user *models.User) error {
 	}
 
 	// 检查邮箱是否被占用
-	if err := r.DB.Where("email = ? AND ID != ?", user.Email, user.ID).First(&existingUser).Error; err == nil {
+	if err := r.DB.Where("email = ? AND id != ?", user.Email, user.ID).First(&existingUser).Error; err == nil {
 		return error_code.ErrEmailExists
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		// 捕获潜在系统错误
@@ -118,14 +126,14 @@ func (r *UserRepository) Update(user *models.User) error {
 	}
 
 	// 检查用户名是否已存在
-	if err := r.DB.Where("username = ? AND ID != ?", user.Username, user.ID).First(&existingUser).Error; err == nil {
+	if err := r.DB.Where("username = ? AND id != ?", user.Username, user.ID).First(&existingUser).Error; err == nil {
 		return error_code.ErrUsernameExists
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		// 捕获潜在系统错误
 		return error_code.ErrInternalServer
 	}
 
-	if err := r.DB.Save(user).Error; err != nil {
+	if err := r.DB.Model(user).Updates(user).Error; err != nil {
 		// 捕获系统错误
 		return error_code.ErrInternalServer
 	}

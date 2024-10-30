@@ -57,3 +57,11 @@ func (r *UserService) Login(loginIdentifier string, password string) (*models.Us
 
 	return existingUser, nil
 }
+
+// 修改用户信息
+func (r *UserService) Update(user *models.User) error{
+	if err := r.UR.Update(user); err != nil {
+		return err
+	}
+	return nil
+}

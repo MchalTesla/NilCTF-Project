@@ -61,9 +61,23 @@ func (r *TeamUserRepository) Read(ID, teamID, userID uint) ([]models.TeamUser, e
 	return teamUsers, nil
 }
 
-// Update 更新队伍和用户的映射
+// Update 更新队伍和用户的映射, 参数 *models.TeamUser{ID, ...}
 func (r *TeamUserRepository) Update(teamUser *models.TeamUser) error {
-	if err := r.DB.Save(teamUser).Error; err != nil {
+	var existingTeamUser models.TeamUser
+	// 检查组-用户ID是否有效
+	if  teamUser.ID == 0 {
+		return error_code.ErrInvalidInput
+	}
+
+	// 检查组-用户ID是否存在
+	if err := r.DB.Where("id = ?", teamUser.ID).First(&existingTeamUser).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return error_code.ErrUserNotInTeam
+		}
+		return error_code.ErrInternalServer
+	}
+
+	if err := r.DB.Model(teamUser).Updates(teamUser).Error; err != nil {
 		return error_code.ErrInternalServer
 	}
 	return nil
