@@ -35,7 +35,6 @@ func Setuproutes(r *gin.Engine) {
 	// 设置静态文件目录
 	r.Static("/css", "./frontend/css")
 	r.Static("/js", "./frontend/js")
-	// r.Static("/home", "./frontend/home")
 
 	r.GET("/login", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "login.html", nil)
