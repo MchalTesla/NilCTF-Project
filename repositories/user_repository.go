@@ -5,7 +5,6 @@ import (
 	"NilCTF/models"
 	"NilCTF/utils"
 	"errors"
-	"strings"
 
 	"gorm.io/gorm"
 )
@@ -23,14 +22,19 @@ func NewUserRepository(DB *gorm.DB) *UserRepository {
 func (r *UserRepository) Create(user *models.User) error {
 	var existingUser models.User
 
-	// 检查用户名中是否有@符号
-	if !strings.Contains(user.Username, "@") {
+	// 检查用户名中是否符合规范
+	if !utils.IsValidUsername(user.Username) {
 		return error_code.ErrInvalidUsername
 	}
 
 	// 检查邮箱是否符合规范
 	if !utils.IsValidEmail(user.Email) {
 		return error_code.ErrInvalidEmail
+	}
+
+	// 检查描述是否符合规范
+	if !utils.IsValidDescription(user.Description) {
+		return error_code.ErrInvalidInput
 	}
 
 	// 检查邮箱是否被占用
@@ -107,14 +111,19 @@ func (r *UserRepository) Update(user *models.User) error {
 		return error_code.ErrInternalServer
 	}
 
-	// 检查用户名中是否有@符号
-	if !strings.Contains(user.Username, "@") {
+	// 检查用户名中是否符合规范
+	if !utils.IsValidUsername(user.Username) {
 		return error_code.ErrInvalidUsername
 	}
 
 	// 检查邮箱是否符合规范
 	if !utils.IsValidEmail(user.Email) {
 		return error_code.ErrInvalidEmail
+	}
+
+	// 检查描述是否符合规范
+	if !utils.IsValidDescription(user.Description) {
+		return error_code.ErrInvalidInput
 	}
 
 	// 检查邮箱是否被占用

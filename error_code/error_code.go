@@ -28,4 +28,5 @@ var (
 	ErrInvalidInput             = errors.New("ERR_INVALID_INPUT")              // 无效输入
 	ErrInternalServer           = errors.New("ERR_INTERNAL_SERVER")            // 内部服务器错误
 	ErrPermissionDenied			= errors.New("ERR_PERMISSION_DENIED")
+	ErrNotFound					= errors.New("ERR_NOT_FOUND")				   // 未找到
 )

@@ -21,6 +21,7 @@ func NewTeamUserRepository(DB *gorm.DB) *TeamUserRepository {
 func (r *TeamUserRepository) Create(teamUser *models.TeamUser) error {
 	var existingTeamUser models.TeamUser
 
+	// 查找是否有该映射，如果有返回已存在，如果没找到，就继续
 	if err := r.DB.Where("teamid = ? AND userid = ?", teamUser.TeamID, teamUser.UserID).First(&existingTeamUser).Error; err == nil {
 		return error_code.ErrUserAlreadyInTeam
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {

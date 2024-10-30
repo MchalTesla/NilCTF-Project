@@ -5,6 +5,7 @@ import (
 	"NilCTF/models"
 	"NilCTF/repositories/interface"
 	"NilCTF/utils"
+	"NilCTF/dto"
 )
 
 // UserService 提供用户相关服务
@@ -39,8 +40,10 @@ func (r *UserService) Login(loginIdentifier string, password string) (*models.Us
 	// 判断 loginIdentifier 是用户名还是邮箱
 	if utils.IsValidEmail(loginIdentifier) {
 		existingUser, err = r.UR.Read(0, loginIdentifier, "") // 通过邮箱查找用户
-	} else {
+	} else if utils.IsValidUsername(loginIdentifier){
 		existingUser, err = r.UR.Read(0, "", loginIdentifier) // 通过用户名查找用户
+	} else {
+		return nil, error_code.ErrInvalidInput
 	}
 
 	if err != nil {
@@ -59,8 +62,24 @@ func (r *UserService) Login(loginIdentifier string, password string) (*models.Us
 }
 
 // 修改用户信息
-func (r *UserService) Update(user *models.User) error{
-	if err := r.UR.Update(user); err != nil {
+func (r *UserService) Update(userID uint, updates dto.UserUpdate) error{
+	var user models.User
+
+	// 根据传入的字段更新值
+	if updates.Username != nil {
+		user.Username = *updates.Username
+	}
+	if updates.Password != nil {
+		user.Password = *updates.Password
+	}
+	if updates.Description != nil {
+		user.Description = *updates.Description
+	}
+	if updates.Email != nil {
+		user.Email = *updates.Email
+	}
+
+	if err := r.UR.Update(&user); err != nil {
 		return err
 	}
 	return nil
