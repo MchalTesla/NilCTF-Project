@@ -38,7 +38,8 @@ func (r *UserControllers) Login(c *gin.Context, US services_interface.UserServic
 		return
 	}
 
-	token, err := middleware.GenerateToken(user.ID)
+	postMiddleware := middleware.NewPostMiddleware()
+	token, err := postMiddleware.GenerateToken(user.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": error_code.ErrInternalServer.Error()})
 		return
