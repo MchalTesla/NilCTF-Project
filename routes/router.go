@@ -17,10 +17,10 @@ func Setuproutes(r *gin.Engine) {
 
 	// 初始化 Handler，包括限速器
 	// 例如，设置每秒 10 个请求，允许的突发请求数为 20
-	handler := middleware.NewHandler(10, 20)
+	handler := middleware.NewHandler()
 
 	// 添加 RateLimitMiddleware 到中间件链中
-	r.Use(handler.RateLimitMiddleware())
+	r.Use(handler.RateLimitMiddleware(10, 20))
 
 	// 添加CSP设置和表单过滤中间件
 	r.Use(handler.CSPMiddleware())

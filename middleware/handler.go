@@ -57,14 +57,14 @@ type Handler struct {
 }
 
 // NewHandler 初始化 Handler 及其限速器
-func NewHandler(r rate.Limit, b int) *Handler {
+func NewHandler() *Handler {
 	return &Handler{
-		ipLimiter: newIPLimiter(r, b),
 	}
 }
 
 // RateLimitMiddleware 是基于 IP 的速率限制中间件
-func (h *Handler) RateLimitMiddleware() gin.HandlerFunc {
+func (h *Handler) RateLimitMiddleware(r rate.Limit, b int) gin.HandlerFunc {
+	h.ipLimiter = newIPLimiter(r, b)
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
 		limiter := h.ipLimiter.getLimiter(ip)
