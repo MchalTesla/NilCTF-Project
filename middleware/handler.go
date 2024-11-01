@@ -137,3 +137,15 @@ func (h *Handler) BluemondayMiddleware(maxParamCount, maxKeyLength, maxFieldLeng
 		c.Next()
 	}
 }
+
+// LimitRequestBody 通过参数 maxBytes 动态限制请求体的大小
+func (h *Handler) LimitRequestBody(maxBytes int64) gin.HandlerFunc {
+    return func(c *gin.Context) {
+        // 检查请求体大小
+        if c.Request.ContentLength > maxBytes {
+            c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, gin.H{"status": "fail", "message": error_code.ErrRequestBodyTooLarge.Error()})
+            return
+        }
+        c.Next()
+    }
+}

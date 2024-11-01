@@ -26,6 +26,9 @@ func Setuproutes(r *gin.Engine) {
 	r.Use(handler.CSPMiddleware())
 	r.Use(handler.BluemondayMiddleware(50, 128, 20000))
 
+	// 添加请求体大小限制中间件
+	r.Use(handler.LimitRequestBody(20*1024*1024))
+
 	//实例化控制器
 	userControllers := &controllers.UserControllers{}
 	indexControllers := &controllers.IndexControllers{}

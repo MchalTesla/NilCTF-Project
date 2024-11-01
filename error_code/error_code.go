@@ -39,4 +39,5 @@ var (
 	ErrKeyTooLong				= errors.New("ERR_KEY_TOO_LONG")				// 键值太长
 	ErrInputTooLong				= errors.New("ERR_INPUT_TOO_LONG")				// 字段太长
 	ErrTooManyRequests			= errors.New("ERR_TOO_MANY_REQUESTS")			// 太多请求
+	ErrRequestBodyTooLarge		= errors.New("ERR_REQUEST_BODY_TOO_LARGE")		// 请求体太大
 )
