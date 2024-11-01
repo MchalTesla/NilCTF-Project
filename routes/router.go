@@ -15,19 +15,20 @@ import (
 
 func Setuproutes(r *gin.Engine) {
 
-	// 初始化 Handler
-	handler := middleware.NewHandler()
+	// 初始化 Middleware
+	preMiddleware := middleware.NewPreMiddleware()
+	postMiddleware := middleware.NewPostMiddleware()
 
 	// 添加 RateLimitMiddleware 到中间件链中
 	// 设置每秒 10 个请求，允许的突发请求数为 20
-	r.Use(handler.RateLimitMiddleware(10, 20))
+	r.Use(preMiddleware.RateLimitMiddleware(10, 20))
 
 	// 添加CSP设置和表单过滤中间件
-	r.Use(handler.CSPMiddleware())
-	r.Use(handler.BluemondayMiddleware(50, 128, 20000))
+	r.Use(preMiddleware.CSPMiddleware())
+	r.Use(preMiddleware.BluemondayMiddleware(50, 128, 20000))
 
 	// 添加请求体大小限制中间件
-	r.Use(handler.LimitRequestBody(20*1024*1024))
+	r.Use(preMiddleware.LimitRequestBody(20*1024*1024))
 
 	//实例化控制器
 	userControllers := &controllers.UserControllers{}
@@ -76,14 +77,14 @@ func Setuproutes(r *gin.Engine) {
 	r.POST("/api/login", func(c *gin.Context) {
 		userControllers.Login(c, services.NewUserService(repositories.NewUserRepository(config.DB)))
 	})
-	r.POST("/api/logout", middleware.JWTAuthMiddleware("all"), userControllers.Logout)
-	r.POST("/api/index", middleware.JWTAuthMiddleware("all"), indexControllers.Index) // 使用 JWT 中间件保护 Index 路由
-	r.POST("/api/home", middleware.JWTAuthMiddleware("all"), func(c *gin.Context) {
+	r.POST("/api/logout", postMiddleware.JWTAuthMiddleware("all"), userControllers.Logout)
+	r.POST("/api/index", postMiddleware.JWTAuthMiddleware("all"), indexControllers.Index) // 使用 JWT 中间件保护 Index 路由
+	r.POST("/api/home", postMiddleware.JWTAuthMiddleware("all"), func(c *gin.Context) {
 		homeControllers.Home(c, services.NewHomeService(repositories.NewUserRepository(config.DB)))
 	})
 	r.POST("/api/user/logout", userControllers.Logout)
-	r.POST("/api/user/verify", middleware.JWTAuthMiddleware("all"), userControllers.VerifyLogin)
-	r.POST("/api/home/modify", middleware.JWTAuthMiddleware("all"), func(c *gin.Context) {
+	r.POST("/api/user/verify", postMiddleware.JWTAuthMiddleware("all"), userControllers.VerifyLogin)
+	r.POST("/api/home/modify", postMiddleware.JWTAuthMiddleware("all"), func(c *gin.Context) {
 		homeControllers.UpdateUser(c, services.NewUserService(repositories.NewUserRepository(config.DB)))
 	})
 	r.POST("/api/competition/list_competition", competitionControllers.ListCompetition)

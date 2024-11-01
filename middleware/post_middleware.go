@@ -19,6 +19,40 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+// isValidTokenHeader 检查授权头是否有效
+func isValidTokenHeader(header string) bool {
+	return header != "" && strings.HasPrefix(header, "Bearer ")
+}
+
+// respondWithError 响应错误
+func respondWithError(c *gin.Context, err error) {
+	message := err.Error()
+	c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": message, "redirect": "/login"})
+	c.Abort()
+}
+
+// parseToken 解析 JWT Token 并返回声明
+func parseToken(tokenString string) (*jwt.Token, *Claims, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return config.JwtSecret, nil
+	})
+
+	if err != nil {
+		return nil, nil, error_code.ErrInternalServer // 解析错误转换为内部服务器错误
+	}
+
+	return token, claims, nil
+}
+
+type PostMiddleware struct {
+
+}
+
+func NewPostMiddleware() *PostMiddleware {
+	return &PostMiddleware{}
+}
+
 // JWTAuthMiddleware JWT 认证中间件
 // 参数用于验证用户的 JWT 并检查角色权限
 // role 参数接受以下值：
@@ -26,7 +60,7 @@ type Claims struct {
 // - "admin": 仅允许管理员角色访问
 // - "user": 允许用户和管理员角色访问
 // - "organizer": 允许比赛创建者访问
-func JWTAuthMiddleware(role string) gin.HandlerFunc {
+func (h *PostMiddleware) JWTAuthMiddleware(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
 		if !isValidTokenHeader(tokenString) {
@@ -36,7 +70,7 @@ func JWTAuthMiddleware(role string) gin.HandlerFunc {
 
 		tokenString = tokenString[7:] // 去掉 "Bearer " 前缀
 
-		token, claims, err := ParseToken(tokenString)
+		token, claims, err := parseToken(tokenString)
 		if err != nil || !token.Valid || claims.ExpiresAt.Time.Before(time.Now()) {
 			respondWithError(c, error_code.ErrInvalidInput)
 			return
@@ -78,34 +112,8 @@ func JWTAuthMiddleware(role string) gin.HandlerFunc {
 	}
 }
 
-// isValidTokenHeader 检查授权头是否有效
-func isValidTokenHeader(header string) bool {
-	return header != "" && strings.HasPrefix(header, "Bearer ")
-}
-
-// respondWithError 响应错误
-func respondWithError(c *gin.Context, err error) {
-	message := err.Error()
-	c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": message, "redirect": "/login"})
-	c.Abort()
-}
-
-// ParseToken 解析 JWT Token 并返回声明
-func ParseToken(tokenString string) (*jwt.Token, *Claims, error) {
-	claims := &Claims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return config.JwtSecret, nil
-	})
-
-	if err != nil {
-		return nil, nil, error_code.ErrInternalServer // 解析错误转换为内部服务器错误
-	}
-
-	return token, claims, nil
-}
-
 // GenerateToken 生成 JWT Token
-func GenerateToken(ID uint) (string, error) {
+func (h *PostMiddleware) GenerateToken(ID uint) (string, error) {
 	claims := Claims{
 		ID: ID,
 		RegisteredClaims: jwt.RegisteredClaims{

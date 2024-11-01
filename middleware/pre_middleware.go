@@ -52,18 +52,17 @@ func (i *ipLimiter) getLimiter(ip string) *rate.Limiter {
 }
 
 // Handler 包含所有中间件相关的处理器
-type Handler struct {
+type PreMiddleware struct {
 	ipLimiter *ipLimiter
 }
 
 // NewHandler 初始化 Handler 及其限速器
-func NewHandler() *Handler {
-	return &Handler{
-	}
+func NewPreMiddleware() *PreMiddleware {
+	return &PreMiddleware{}
 }
 
 // RateLimitMiddleware 是基于 IP 的速率限制中间件
-func (h *Handler) RateLimitMiddleware(r rate.Limit, b int) gin.HandlerFunc {
+func (h *PreMiddleware) RateLimitMiddleware(r rate.Limit, b int) gin.HandlerFunc {
 	h.ipLimiter = newIPLimiter(r, b)
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
@@ -83,7 +82,7 @@ func (h *Handler) RateLimitMiddleware(r rate.Limit, b int) gin.HandlerFunc {
 }
 
 // CSPMiddleware 设置内容安全策略头
-func (h *Handler) CSPMiddleware() gin.HandlerFunc {
+func (h *PreMiddleware) CSPMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';")
 		c.Next()
@@ -91,7 +90,7 @@ func (h *Handler) CSPMiddleware() gin.HandlerFunc {
 }
 
 // BluemondayMiddleware 过滤表单输入
-func (h *Handler) BluemondayMiddleware(maxParamCount, maxKeyLength, maxFieldLength int) gin.HandlerFunc {
+func (h *PreMiddleware) BluemondayMiddleware(maxParamCount, maxKeyLength, maxFieldLength int) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 解析表单数据
 		if err := c.Request.ParseForm(); err != nil {
@@ -139,7 +138,7 @@ func (h *Handler) BluemondayMiddleware(maxParamCount, maxKeyLength, maxFieldLeng
 }
 
 // LimitRequestBody 通过参数 maxBytes 动态限制请求体的大小
-func (h *Handler) LimitRequestBody(maxBytes int64) gin.HandlerFunc {
+func (h *PreMiddleware) LimitRequestBody(maxBytes int64) gin.HandlerFunc {
     return func(c *gin.Context) {
         // 检查请求体大小
         if c.Request.ContentLength > maxBytes {
