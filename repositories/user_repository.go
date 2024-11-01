@@ -145,6 +145,13 @@ func (r *UserRepository) Update(user *models.User) error {
 		return error_code.ErrInternalServer
 	}
 
+	// 密码哈希化
+	hashedPassword, err := utils.HashPassword(user.Password)
+	if err != nil {
+		return error_code.ErrInternalServer
+	}
+	user.Password = hashedPassword
+
 	if err := r.DB.Model(user).Updates(user).Error; err != nil {
 		// 捕获系统错误
 		return error_code.ErrInternalServer

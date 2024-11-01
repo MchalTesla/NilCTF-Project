@@ -62,6 +62,7 @@ func Setuproutes(r *gin.Engine) {
 	r.POST("/api/login", func(c *gin.Context) {
 		userControllers.Login(c, services.NewUserService(repositories.NewUserRepository(config.DB)))
 	})
+	r.POST("/api/logout", middleware.JWTAuthMiddleware("all"), userControllers.Logout)
 	r.POST("/api/index", middleware.JWTAuthMiddleware("all"), indexControllers.Index) // 使用 JWT 中间件保护 Index 路由
 	r.POST("/api/home", middleware.JWTAuthMiddleware("all"), func(c *gin.Context) {
 		homeControllers.Home(c, services.NewHomeService(repositories.NewUserRepository(config.DB)))
