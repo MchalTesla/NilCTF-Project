@@ -32,4 +32,11 @@ var (
 	ErrNotFound					= errors.New("ERR_NOT_FOUND")				   // 未找到
 	ErrInvalidDescription		= errors.New("ERR_INVALID_DESCRIPTION")		   // 描述无效
 	ErrInvalidID				= errors.New("ERR_INVALID_ID")				   // ID无效
+
+	// 中间件错误
+	ErrFailedToParseForm		= errors.New("ERR_FAILED_TO_PARSE_FORM")		// 解析表单错误
+	ErrTooManyParameters		= errors.New("ERR_TOO_MANY_PARAMETERS")			// 太多参数
+	ErrKeyTooLong				= errors.New("ERR_KEY_TOO_LONG")				// 键值太长
+	ErrInputTooLong				= errors.New("ERR_INPUT_TOO_LONG")				// 字段太长
+	ErrTooManyRequests			= errors.New("ERR_TOO_MANY_REQUESTS")			// 太多请求
 )

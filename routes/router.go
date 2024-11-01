@@ -15,6 +15,17 @@ import (
 
 func Setuproutes(r *gin.Engine) {
 
+	// 初始化 Handler，包括限速器
+	// 例如，设置每秒 10 个请求，允许的突发请求数为 20
+	handler := middleware.NewHandler(10, 20)
+
+	// 添加 RateLimitMiddleware 到中间件链中
+	r.Use(handler.RateLimitMiddleware())
+
+	// 添加CSP设置和表单过滤中间件
+	r.Use(handler.CSPMiddleware())
+	r.Use(handler.BluemondayMiddleware(50, 128, 20000))
+
 	//实例化控制器
 	userControllers := &controllers.UserControllers{}
 	indexControllers := &controllers.IndexControllers{}
