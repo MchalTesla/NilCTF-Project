@@ -24,6 +24,7 @@ var (
 	ErrUsernameExists           = errors.New("ERR_USERNAME_EXISTS")            // 用户名已存在
 	ErrUserNotFound             = errors.New("ERR_USER_NOT_FOUND")             // 未找到用户
 	ErrInvalidCredentials 		= errors.New("ERR_INVALID_CREDENTIALS") 	   // 用户名或密码错误
+	ErrUserNotLoggedIn			= errors.New("ERR_USER_NOT_LOGGED_IN")			// 用户未登录
 	
 	// 通用错误
 	ErrInvalidInput             = errors.New("ERR_INVALID_INPUT")              // 无效输入
@@ -40,4 +41,7 @@ var (
 	ErrInputTooLong				= errors.New("ERR_INPUT_TOO_LONG")				// 字段太长
 	ErrTooManyRequests			= errors.New("ERR_TOO_MANY_REQUESTS")			// 太多请求
 	ErrRequestBodyTooLarge		= errors.New("ERR_REQUEST_BODY_TOO_LARGE")		// 请求体太大
+	ErrFileTooLarge				= errors.New("ERR_FILE_TOO_LARGE")				// 上传的文件太大
+	ErrTooManyFiles				= errors.New("ERR_TOO_MANY_FILES")				// 上传的文件太多
+	ErrUnsupportedContentType	= errors.New("ERR_UNSUPPORTED_CONTENT_TYPE")		// 请求体类型错误，只允许JSON和文件上传
 )

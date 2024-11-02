@@ -15,5 +15,5 @@ func main() {
 	routes.Setuproutes(r)
 
 	// 启动服务器
-	r.Run(":8080") // 启动服务，监听8080端口
+	r.Run(":80") // 启动服务，监听8080端口
 }

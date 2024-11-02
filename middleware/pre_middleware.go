@@ -2,67 +2,78 @@ package middleware
 
 import (
 	"NilCTF/error_code"
+	"encoding/json"
 	"net/http"
 	"sync"
-	"time"
+	"unicode/utf8"
+	"html"
 
+	"bytes"
 	"github.com/gin-gonic/gin"
-	"github.com/microcosm-cc/bluemonday"
+	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/time/rate"
+	"io"
 )
 
-// ipLimiter 用于维护 IP 地址到限速器的映射
-type ipLimiter struct {
-	limiters sync.Map // 使用 sync.Map 提高并发性能
-	rate     rate.Limit
-	burst    int
+// shardLimiter 使用 LRU 缓存存储分片限速器
+type shardLimiter struct {
+	cache      *lru.Cache
+	mu         sync.Mutex
+	rate       rate.Limit
+	burst      int
+	shardCount int
 }
 
-// newIPLimiter 初始化 ipLimiter 并启动定期清理过期限速器的 goroutine
-func newIPLimiter(r rate.Limit, b int) *ipLimiter {
-	i := &ipLimiter{
-		rate:  r,
-		burst: b,
+// 创建一个带 LRU 缓存的分片限速器管理器
+func newShardLimiter(rate rate.Limit, burst int, cacheSize int) *shardLimiter {
+	cache, err := lru.New(cacheSize)
+	if err != nil {
+		return nil
 	}
-
-	// 启动一个goroutine定期清理过期的限速器
-	go func() {
-		for {
-			time.Sleep(1 * time.Minute) // 每分钟清理一次
-			i.cleanupLimiters()
-		}
-	}()
-
-	return i
+	return &shardLimiter{
+		cache:      cache,
+		rate:       rate,
+		burst:      burst,
+		shardCount: cacheSize * 2, // 根据缓存大小（最大用户数）* 2 设置分片数量
+	}
 }
 
-// getLimiter 返回指定 IP 的限速器，如果不存在则创建新的
-func (i *ipLimiter) getLimiter(ip string) *rate.Limiter {
-	if limiter, exists := i.limiters.Load(ip); exists {
+// getLimiter 获取或创建限速器
+func (sl *shardLimiter) getLimiter(ip string) *rate.Limiter {
+	shardKey := hashIP(ip) % uint32(sl.shardCount)
+
+	// 先检查缓存
+	if limiter, ok := sl.cache.Get(shardKey); ok {
 		return limiter.(*rate.Limiter)
 	}
 
-	// 创建一个新的限速器
-	newLimiter := rate.NewLimiter(i.rate, i.burst)
-	i.limiters.Store(ip, newLimiter)
-	return newLimiter
+	// 使用双重检查获取限速器
+	sl.mu.Lock()
+	defer sl.mu.Unlock()
+
+	if limiter, ok := sl.cache.Get(shardKey); ok {
+		return limiter.(*rate.Limiter)
+	}
+
+	// 创建新限速器并存入缓存
+	limiter := rate.NewLimiter(sl.rate, sl.burst)
+	sl.cache.Add(shardKey, limiter)
+	return limiter
 }
 
-// cleanupLimiters 清理未活跃的限速器
-func (i *ipLimiter) cleanupLimiters() {
-	i.limiters.Range(func(ip, limiter interface{}) bool {
-		lim := limiter.(*rate.Limiter)
-		// 如果限速器在5分钟内没有被使用过，则清理它
-		if lim.AllowN(time.Now(), 0) {
-			i.limiters.Delete(ip)
-		}
-		return true
-	})
+// hashIP 哈希函数确保分片均匀
+func hashIP(ip string) uint32 {
+	var hash uint32 = 2166136261
+	for i := 0; i < len(ip); i++ {
+		hash ^= uint32(ip[i])
+		hash *= 16777619
+	}
+	return hash
 }
 
-// Handler 包含所有中间件相关的处理器
+// PreMiddleware 包含限速器的中间件处理
 type PreMiddleware struct {
-	ipLimiter *ipLimiter
+	shardLimiter *shardLimiter
 }
 
 // NewPreMiddleware 初始化 Handler
@@ -70,14 +81,12 @@ func NewPreMiddleware() *PreMiddleware {
 	return &PreMiddleware{}
 }
 
-// RateLimitMiddleware 是基于 IP 的速率限制中间件
-func (h *PreMiddleware) RateLimitMiddleware(r rate.Limit, b int) gin.HandlerFunc {
-	h.ipLimiter = newIPLimiter(r, b)
+// RateLimitMiddleware 创建基于 IP 的限速中间件
+func (h *PreMiddleware) RateLimitMiddleware(r rate.Limit, b int, cacheSize int) gin.HandlerFunc {
+	h.shardLimiter = newShardLimiter(r, b, cacheSize)
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
-		limiter := h.ipLimiter.getLimiter(ip)
-
-		// 检查限速器是否允许请求
+		limiter := h.shardLimiter.getLimiter(ip)
 		if !limiter.Allow() {
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"status":  "fail",
@@ -85,7 +94,6 @@ func (h *PreMiddleware) RateLimitMiddleware(r rate.Limit, b int) gin.HandlerFunc
 			})
 			return
 		}
-
 		c.Next()
 	}
 }
@@ -98,62 +106,136 @@ func (h *PreMiddleware) CSPMiddleware() gin.HandlerFunc {
 	}
 }
 
-// BluemondayMiddleware 过滤表单输入
-func (h *PreMiddleware) BluemondayMiddleware(maxParamCount, maxKeyLength, maxFieldLength int) gin.HandlerFunc {
+// EscapeStringMiddleware 处理参数过滤和内容检查
+func (h *PreMiddleware) FilterRequestParameters(maxParamCount, maxKeyLength, maxFieldLength int, maxFileSize int64) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 解析表单数据
-		if err := c.Request.ParseForm(); err != nil {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"status":  "fail",
-				"message": error_code.ErrFailedToParseForm.Error(),
-			})
-			return
-		}
-
-		// 检查参数数量
-		if len(c.Request.PostForm) > maxParamCount {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"status":  "fail",
-				"message": error_code.ErrTooManyParameters.Error(),
-			})
-			return
-		}
-
-		// 清理每个输入字段并检查字符长度
-		for key, values := range c.Request.PostForm {
-			if len(key) > maxKeyLength {
+		switch c.Request.Method {
+		case http.MethodGet:
+			if err := h.processGETRequest(c, maxParamCount, maxKeyLength, maxFieldLength); err != nil {
 				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 					"status":  "fail",
-					"message": error_code.ErrKeyTooLong.Error(),
+					"message": err.Error(),
 				})
-				return
 			}
-			for i, value := range values {
-				if len(value) > maxFieldLength {
-					c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-						"status":  "fail",
-						"message": error_code.ErrInputTooLong.Error(),
-					})
-					return
-				}
-
-				p := bluemonday.UGCPolicy()
-				c.Request.PostForm[key][i] = p.Sanitize(value) // 清理输入并替换原值
+		case http.MethodPost:
+			if err := h.processPOSTRequest(c, maxParamCount, maxKeyLength, maxFieldLength, maxFileSize); err != nil {
+				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+					"status":  "fail",
+					"message": err.Error(),
+				})
 			}
+		default:
+			c.AbortWithStatusJSON(http.StatusUnsupportedMediaType, gin.H{
+				"status":  "fail",
+				"message": error_code.ErrUnsupportedContentType.Error(),
+			})
 		}
-
 		c.Next()
 	}
 }
 
-// LimitRequestBody 通过参数 maxBytes 动态限制请求体的大小
-func (h *PreMiddleware) LimitRequestBody(maxBytes int64) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// 检查请求体大小
-		if c.Request.ContentLength > maxBytes {
-			c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, gin.H{"status": "fail", "message": error_code.ErrRequestBodyTooLarge.Error()})
-			return
-		}
-		c.Next()
+// processGETRequest 处理 GET 请求
+func (h *PreMiddleware) processGETRequest(c *gin.Context, maxParamCount, maxKeyLength, maxFieldLength int) error {
+	queryParams := c.Request.URL.Query()
+
+	if len(queryParams) > maxParamCount {
+		return error_code.ErrTooManyParameters
 	}
+
+	escapedParams := make(map[string][]string)
+	for key, values := range queryParams {
+		if utf8.RuneCountInString(key) > maxKeyLength {
+			return error_code.ErrKeyTooLong
+		}
+		escapedKey := html.EscapeString(key)
+		for _, value := range values {
+			if utf8.RuneCountInString(value) > maxFieldLength {
+				return error_code.ErrInputTooLong
+			}
+			escapedParams[escapedKey] = append(escapedParams[escapedKey], html.EscapeString(value))
+		}
+	}
+	c.Request.URL.RawQuery = queryToString(escapedParams)
+	return nil
+}
+
+// processPOSTRequest 处理 POST 请求
+func (h *PreMiddleware) processPOSTRequest(c *gin.Context, maxParamCount, maxKeyLength, maxFieldLength int, maxFileSize int64) error {
+	switch c.ContentType() {
+	case "application/json":
+		var jsonData map[string]interface{}
+		if err := c.ShouldBindJSON(&jsonData); err != nil {
+			return error_code.ErrInternalServer
+		}
+		if len(jsonData) > maxParamCount {
+			return error_code.ErrTooManyParameters
+		}
+		sanitizeJSONData(jsonData, maxKeyLength, maxFieldLength)
+		jsonBytes, err := json.Marshal(jsonData)
+		if err != nil {
+			return error_code.ErrInternalServer
+		}
+		c.Request.Body = io.NopCloser(bytes.NewReader(jsonBytes))
+		c.Request.ContentLength = int64(len(jsonBytes))
+	case "multipart/form-data":
+		if err := c.Request.ParseMultipartForm(maxFileSize); err != nil {
+			return error_code.ErrFileTooLarge
+		}
+		if len(c.Request.MultipartForm.File) > maxParamCount {
+			return error_code.ErrTooManyFiles
+		}
+		for _, files := range c.Request.MultipartForm.File {
+			for _, file := range files {
+				if file.Size > maxFileSize {
+					return error_code.ErrFileTooLarge
+				}
+			}
+		}
+	default:
+		return error_code.ErrUnsupportedContentType
+	}
+	return nil
+}
+
+// sanitizeJSONData 递归处理 JSON 数据的键和值
+func sanitizeJSONData(jsonData map[string]interface{}, maxKeyLength, maxFieldLength int) {
+	for key, value := range jsonData {
+		if utf8.RuneCountInString(key) > maxKeyLength {
+			delete(jsonData, key)
+			continue
+		}
+		escapedKey := html.EscapeString(key)
+
+		switch v := value.(type) {
+		case string:
+			jsonData[escapedKey] = html.EscapeString(v)
+		case []interface{}:
+			for i, item := range v {
+				if strItem, ok := item.(string); ok {
+					v[i] = html.EscapeString(strItem)
+				} else if itemMap, ok := item.(map[string]interface{}); ok {
+					sanitizeJSONData(itemMap, maxKeyLength, maxFieldLength)
+				}
+			}
+		case map[string]interface{}:
+			sanitizeJSONData(v, maxKeyLength, maxFieldLength)
+		}
+		if key != escapedKey {
+			delete(jsonData, key)
+		}
+	}
+}
+
+// queryToString 将查询参数转换为字符串
+func queryToString(params map[string][]string) string {
+	query := ""
+	for key, values := range params {
+		for _, value := range values {
+			query += key + "=" + value + "&"
+		}
+	}
+	if len(query) == 0 {
+        return query // 如果 query 为空，则直接返回
+    }
+	return query[:len(query)-1]
 }

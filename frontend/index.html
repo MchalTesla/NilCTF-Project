@@ -48,7 +48,7 @@
         $(document).ready(function() {
             // 检查用户登录状态
             $.ajax({
-                type: 'POST',
+                type: 'GET',
                 url: '/api/index',
                 success: function(response) {
                     $('#welcome-message').html(`
@@ -82,7 +82,7 @@
 
             // 获取用户角色
             $.ajax({
-                type: 'POST',
+                type: 'GET',
                 url: '/api/user/verify',
                 success: function(response) {
                     if (response.user_role === 'admin') {
@@ -124,8 +124,8 @@
             // 退出登录按钮事件
             $('#logout-button').click(function() {
                 $.ajax({
-                    type: 'POST',
-                    url: '/api/logout',
+                    type: 'GET',
+                    url: '/api/user/logout',
                     success: function(response) {
                         alert(response.message);
                         localStorage.removeItem('token');

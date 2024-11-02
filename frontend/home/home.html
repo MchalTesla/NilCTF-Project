@@ -65,7 +65,7 @@
         try {
             const token = localStorage.getItem('token'); // 从 localStorage 获取 token
             const response = await fetch('/api/home', {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': token ? 'Bearer ' + token : '', // 添加 Authorization 头

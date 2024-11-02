@@ -48,7 +48,7 @@ func (r *HomeControllers) Home(c *gin.Context, US services_interface.HomeService
 }
 
 // UpdateUser 更新用户信息的 API
-func (r *HomeControllers) UpdateUser(c *gin.Context, US services_interface.UserServiceInterface) {
+func (r *HomeControllers) Modify(c *gin.Context, US services_interface.UserServiceInterface) {
     var updates dto.UserUpdate
     var userID uint
 	{
@@ -73,5 +73,5 @@ func (r *HomeControllers) UpdateUser(c *gin.Context, US services_interface.UserS
         return
     }
 
-    c.JSON(http.StatusOK, gin.H{"status": "success", "message": "User updated successfully", "redirect": "/index"})
+    c.JSON(http.StatusOK, gin.H{"status": "success", "message": "User updated successfully", "redirect": "/home"})
 }

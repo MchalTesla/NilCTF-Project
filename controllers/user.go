@@ -49,14 +49,14 @@ func (r *UserControllers) Login(c *gin.Context, US services_interface.UserServic
 }
 
 func (r *UserControllers) Logout(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "退出登录成功", "redirect": "/index"})
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "退出登录成功", "redirect": "/index", "clear_token": true})
 }
 
 func (r *UserControllers) Register(c *gin.Context, US services_interface.UserServiceInterface) {
 
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": error_code.ErrInvalidInput.Error()})
 		return
 	}
 

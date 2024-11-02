@@ -64,7 +64,7 @@ func (h *PostMiddleware) JWTAuthMiddleware(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
 		if !isValidTokenHeader(tokenString) {
-			respondWithError(c, error_code.ErrInvalidInput)
+			respondWithError(c, error_code.ErrUserNotLoggedIn)
 			return
 		}
 
@@ -72,7 +72,7 @@ func (h *PostMiddleware) JWTAuthMiddleware(role string) gin.HandlerFunc {
 
 		token, claims, err := parseToken(tokenString)
 		if err != nil || !token.Valid || claims.ExpiresAt.Time.Before(time.Now()) {
-			respondWithError(c, error_code.ErrInvalidInput)
+			respondWithError(c, error_code.ErrUserNotLoggedIn)
 			return
 		}
 

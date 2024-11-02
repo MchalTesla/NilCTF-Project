@@ -5,6 +5,7 @@ go 1.23.2
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/hashicorp/golang-lru v1.0.2
 	github.com/microcosm-cc/bluemonday v1.0.27
 	golang.org/x/crypto v0.28.0
 	golang.org/x/time v0.7.0
