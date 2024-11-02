@@ -96,7 +96,7 @@
 
             // 获取比赛列表
             $.ajax({
-                type: 'POST',
+                type: 'GET',
                 url: '/api/competition/list_competition',
                 success: function(response) {
                     const competitionList = $('#competition-list');
