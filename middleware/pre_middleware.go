@@ -13,42 +13,51 @@ import (
 
 // ipLimiter 用于维护 IP 地址到限速器的映射
 type ipLimiter struct {
-	limiters map[string]*rate.Limiter
-	mu       sync.Mutex
+	limiters sync.Map // 使用 sync.Map 提高并发性能
 	rate     rate.Limit
 	burst    int
 }
 
+// newIPLimiter 初始化 ipLimiter 并启动定期清理过期限速器的 goroutine
 func newIPLimiter(r rate.Limit, b int) *ipLimiter {
-	return &ipLimiter{
-		limiters: make(map[string]*rate.Limiter),
-		rate:     r,
-		burst:    b,
-	}
-}
-
-func (i *ipLimiter) getLimiter(ip string) *rate.Limiter {
-	i.mu.Lock()
-	defer i.mu.Unlock()
-
-	// 如果限速器已经存在，直接返回
-	if limiter, exists := i.limiters[ip]; exists {
-		return limiter
+	i := &ipLimiter{
+		rate:  r,
+		burst: b,
 	}
 
-	// 否则，创建一个新的限速器
-	limiter := rate.NewLimiter(i.rate, i.burst)
-	i.limiters[ip] = limiter
-
-	// 启动一个 goroutine 定期清理过期的限速器（例如，5 分钟后）
+	// 启动一个goroutine定期清理过期的限速器
 	go func() {
-		time.Sleep(5 * time.Minute)
-		i.mu.Lock()
-		delete(i.limiters, ip)
-		i.mu.Unlock()
+		for {
+			time.Sleep(1 * time.Minute) // 每分钟清理一次
+			i.cleanupLimiters()
+		}
 	}()
 
-	return limiter
+	return i
+}
+
+// getLimiter 返回指定 IP 的限速器，如果不存在则创建新的
+func (i *ipLimiter) getLimiter(ip string) *rate.Limiter {
+	if limiter, exists := i.limiters.Load(ip); exists {
+		return limiter.(*rate.Limiter)
+	}
+
+	// 创建一个新的限速器
+	newLimiter := rate.NewLimiter(i.rate, i.burst)
+	i.limiters.Store(ip, newLimiter)
+	return newLimiter
+}
+
+// cleanupLimiters 清理未活跃的限速器
+func (i *ipLimiter) cleanupLimiters() {
+	i.limiters.Range(func(ip, limiter interface{}) bool {
+		lim := limiter.(*rate.Limiter)
+		// 如果限速器在5分钟内没有被使用过，则清理它
+		if lim.AllowN(time.Now(), 0) {
+			i.limiters.Delete(ip)
+		}
+		return true
+	})
 }
 
 // Handler 包含所有中间件相关的处理器
@@ -56,7 +65,7 @@ type PreMiddleware struct {
 	ipLimiter *ipLimiter
 }
 
-// NewHandler 初始化 Handler 及其限速器
+// NewPreMiddleware 初始化 Handler
 func NewPreMiddleware() *PreMiddleware {
 	return &PreMiddleware{}
 }
@@ -139,12 +148,12 @@ func (h *PreMiddleware) BluemondayMiddleware(maxParamCount, maxKeyLength, maxFie
 
 // LimitRequestBody 通过参数 maxBytes 动态限制请求体的大小
 func (h *PreMiddleware) LimitRequestBody(maxBytes int64) gin.HandlerFunc {
-    return func(c *gin.Context) {
-        // 检查请求体大小
-        if c.Request.ContentLength > maxBytes {
-            c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, gin.H{"status": "fail", "message": error_code.ErrRequestBodyTooLarge.Error()})
-            return
-        }
-        c.Next()
-    }
+	return func(c *gin.Context) {
+		// 检查请求体大小
+		if c.Request.ContentLength > maxBytes {
+			c.AbortWithStatusJSON(http.StatusRequestEntityTooLarge, gin.H{"status": "fail", "message": error_code.ErrRequestBodyTooLarge.Error()})
+			return
+		}
+		c.Next()
+	}
 }
