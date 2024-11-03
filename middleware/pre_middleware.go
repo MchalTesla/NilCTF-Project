@@ -2,17 +2,12 @@ package middleware
 
 import (
 	"NilCTF/error_code"
-	"encoding/json"
 	"net/http"
 	"sync"
-	"unicode/utf8"
-	"html"
 
-	"bytes"
 	"github.com/gin-gonic/gin"
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/time/rate"
-	"io"
 )
 
 // shardLimiter 使用 LRU 缓存存储分片限速器
@@ -104,138 +99,4 @@ func (h *PreMiddleware) CSPMiddleware() gin.HandlerFunc {
 		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';")
 		c.Next()
 	}
-}
-
-// EscapeStringMiddleware 处理参数过滤和内容检查
-func (h *PreMiddleware) FilterRequestParameters(maxParamCount, maxKeyLength, maxFieldLength int, maxFileSize int64) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		switch c.Request.Method {
-		case http.MethodGet:
-			if err := h.processGETRequest(c, maxParamCount, maxKeyLength, maxFieldLength); err != nil {
-				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-					"status":  "fail",
-					"message": err.Error(),
-				})
-			}
-		case http.MethodPost:
-			if err := h.processPOSTRequest(c, maxParamCount, maxKeyLength, maxFieldLength, maxFileSize); err != nil {
-				c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-					"status":  "fail",
-					"message": err.Error(),
-				})
-			}
-		default:
-			c.AbortWithStatusJSON(http.StatusUnsupportedMediaType, gin.H{
-				"status":  "fail",
-				"message": error_code.ErrUnsupportedContentType.Error(),
-			})
-		}
-		c.Next()
-	}
-}
-
-// processGETRequest 处理 GET 请求
-func (h *PreMiddleware) processGETRequest(c *gin.Context, maxParamCount, maxKeyLength, maxFieldLength int) error {
-	queryParams := c.Request.URL.Query()
-
-	if len(queryParams) > maxParamCount {
-		return error_code.ErrTooManyParameters
-	}
-
-	escapedParams := make(map[string][]string)
-	for key, values := range queryParams {
-		if utf8.RuneCountInString(key) > maxKeyLength {
-			return error_code.ErrKeyTooLong
-		}
-		escapedKey := html.EscapeString(key)
-		for _, value := range values {
-			if utf8.RuneCountInString(value) > maxFieldLength {
-				return error_code.ErrInputTooLong
-			}
-			escapedParams[escapedKey] = append(escapedParams[escapedKey], html.EscapeString(value))
-		}
-	}
-	c.Request.URL.RawQuery = queryToString(escapedParams)
-	return nil
-}
-
-// processPOSTRequest 处理 POST 请求
-func (h *PreMiddleware) processPOSTRequest(c *gin.Context, maxParamCount, maxKeyLength, maxFieldLength int, maxFileSize int64) error {
-	switch c.ContentType() {
-	case "application/json":
-		var jsonData map[string]interface{}
-		if err := c.ShouldBindJSON(&jsonData); err != nil {
-			return error_code.ErrInternalServer
-		}
-		if len(jsonData) > maxParamCount {
-			return error_code.ErrTooManyParameters
-		}
-		sanitizeJSONData(jsonData, maxKeyLength, maxFieldLength)
-		jsonBytes, err := json.Marshal(jsonData)
-		if err != nil {
-			return error_code.ErrInternalServer
-		}
-		c.Request.Body = io.NopCloser(bytes.NewReader(jsonBytes))
-		c.Request.ContentLength = int64(len(jsonBytes))
-	case "multipart/form-data":
-		if err := c.Request.ParseMultipartForm(maxFileSize); err != nil {
-			return error_code.ErrFileTooLarge
-		}
-		if len(c.Request.MultipartForm.File) > maxParamCount {
-			return error_code.ErrTooManyFiles
-		}
-		for _, files := range c.Request.MultipartForm.File {
-			for _, file := range files {
-				if file.Size > maxFileSize {
-					return error_code.ErrFileTooLarge
-				}
-			}
-		}
-	default:
-		return error_code.ErrUnsupportedContentType
-	}
-	return nil
-}
-
-// sanitizeJSONData 递归处理 JSON 数据的键和值
-func sanitizeJSONData(jsonData map[string]interface{}, maxKeyLength, maxFieldLength int) {
-	for key, value := range jsonData {
-		if utf8.RuneCountInString(key) > maxKeyLength {
-			delete(jsonData, key)
-			continue
-		}
-		escapedKey := html.EscapeString(key)
-
-		switch v := value.(type) {
-		case string:
-			jsonData[escapedKey] = html.EscapeString(v)
-		case []interface{}:
-			for i, item := range v {
-				if strItem, ok := item.(string); ok {
-					v[i] = html.EscapeString(strItem)
-				} else if itemMap, ok := item.(map[string]interface{}); ok {
-					sanitizeJSONData(itemMap, maxKeyLength, maxFieldLength)
-				}
-			}
-		case map[string]interface{}:
-			sanitizeJSONData(v, maxKeyLength, maxFieldLength)
-		}
-		if key != escapedKey {
-			delete(jsonData, key)
-		}
-	}
-}
-
-// queryToString 将查询参数转换为字符串
-func queryToString(params map[string][]string) string {
-	query := ""
-	for key, values := range params {
-		for _, value := range values {
-			query += key + "=" + value + "&"
-		}
-	}
-	if len(query) == 0 {
-        return query // 如果 query 为空，则直接返回
-    }
-	return query[:len(query)-1]
 }

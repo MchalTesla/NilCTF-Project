@@ -68,7 +68,6 @@ func Setuproutes(r *gin.Engine) {
 		apiGroup.Use(
 			preMiddleware.RateLimitMiddleware(10, 20, 5000),
 			preMiddleware.CSPMiddleware(),
-			preMiddleware.FilterRequestParameters(50, 128, 20000, 20*1024*1024), // 更名为 EscapeStringMiddleware 更清晰
 		)
 
 		// 注册 API 路由
