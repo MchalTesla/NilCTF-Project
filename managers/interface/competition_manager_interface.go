@@ -1,10 +1,10 @@
-package repositories_interface
+package managers_interface
 
 import (
 	"NilCTF/models"
 )
 
-type CompetitionRepositoryInterface interface {
+type CompetitionManagerInterface interface {
 	Create(competition *models.Competition) error
 	Get(ID uint) (*models.Competition, error)
 	Update(competition *models.Competition) error

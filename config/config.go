@@ -37,6 +37,7 @@ func init() {
 	loadConfig()
 	jwtSecretConfig()
 	ConnectDB()
+	models.InitializeConfigs(DB)
 }
 
 // loadConfig 从 YAML 文件加载配置
@@ -90,6 +91,7 @@ func ConnectDB() {
         &models.CompetitionTeam{},
         &models.TeamUser{},
         &models.Team{},
+		&models.Config{},
     }
     // 调用自动迁移函数
     err = DB.AutoMigrate(modelsToMigrate...)

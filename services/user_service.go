@@ -1,86 +1,86 @@
 package services
 
 import (
-	"NilCTF/error_code"
-	"NilCTF/models"
-	"NilCTF/repositories/interface"
-	"NilCTF/utils"
 	"NilCTF/dto"
+	"NilCTF/error_code"
+	"NilCTF/managers/interface"
+	"NilCTF/models"
+	"NilCTF/utils"
 )
 
 // UserService 提供用户相关服务
 type UserService struct {
-	UR repositories_interface.UserRepositoryInterface
+	UM managers_interface.UserManagerInterface
 }
 
 // NewUserService 返回一个新的 UserService 实例
-func NewUserService(UR repositories_interface.UserRepositoryInterface) *UserService {
-	return &UserService{UR: UR}
+func NewUserService(UM managers_interface.UserManagerInterface) *UserService {
+	return &UserService{UM: UM}
 }
 
 // Register 注册一个新用户
-func (r *UserService) Register(user *models.User) error {
-	// 检查用户是否已存在
-	existingUser, err := r.UR.Read(0, user.Email, user.Username)
-	if err == nil && existingUser != nil {
-		return error_code.ErrEmailExists // 返回邮箱已被占用的错误
-	}
+func (r *UserService) Register(creates *dto.UserCreate) error {
+	var user models.User
 
-	if err := r.UR.Create(user); err != nil {
+	user.Username = creates.Username
+	user.Password = creates.Password
+	user.Email = creates.Email
+	
+	if err := r.UM.Create(&user); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Login 用户登录
-func (r *UserService) Login(loginIdentifier string, password string) (*models.User, error) {
+func (r *UserService) Login(loginIdentifier string, password string) (uint, error) {
 	var existingUser *models.User
 	var err error
 
 	// 判断 loginIdentifier 是用户名还是邮箱
 	if utils.IsValidEmail(loginIdentifier) {
-		existingUser, err = r.UR.Read(0, loginIdentifier, "") // 通过邮箱查找用户
-	} else if utils.IsValidName(loginIdentifier){
-		existingUser, err = r.UR.Read(0, "", loginIdentifier) // 通过用户名查找用户
+		existingUser, err = r.UM.Get(0, loginIdentifier, "") // 通过邮箱查找用户
+	} else if utils.IsValidName(loginIdentifier) {
+		existingUser, err = r.UM.Get(0, "", loginIdentifier) // 通过用户名查找用户
 	} else {
-		return nil, error_code.ErrInvalidInput
+		return 0, error_code.ErrInvalidInput
 	}
 
 	if err != nil {
-		return nil, err // 处理其他可能的错误
+		return 0, err // 处理其他可能的错误
 	}
 
 	if existingUser == nil {
-		return nil, error_code.ErrUserNotFound // 返回用户未找到的错误
+		return 0, error_code.ErrUserNotFound // 返回用户未找到的错误
 	}
 
 	if !utils.CheckPassword(existingUser.Password, password) {
-		return nil, error_code.ErrInvalidCredentials // 返回密码错误的错误
+		return 0, error_code.ErrInvalidCredentials // 返回密码错误的错误
 	}
 
-	return existingUser, nil
+	switch existingUser.Status {
+	case "banned":
+		return 0, error_code.ErrUserBanned
+	case "pending":
+		return 0, error_code.ErrUserPending
+	default:
+		return existingUser.ID, nil
+	}
 }
 
 // 修改用户信息
-func (r *UserService) Update(userID uint, updates dto.UserUpdate) error{
+func (r *UserService) Update(userID uint, updates *dto.UserUpdate) error {
 	var user models.User
 
 	// 根据传入的字段更新值
 	user.ID = userID
-	if updates.Username != nil {
-		user.Username = *updates.Username
-	}
-	if updates.Password != nil {
-		user.Password = *updates.Password
-	}
-	if updates.Description != nil {
-		user.Description = *updates.Description
-	}
-	if updates.Email != nil {
-		user.Email = *updates.Email
-	}
 
-	if err := r.UR.Update(&user); err != nil {
+	user.Username = updates.Username
+	user.Password = updates.Password
+	user.Description = updates.Description
+	user.Email = updates.Email
+
+	if err := r.UM.Update(&user); err != nil {
 		return err
 	}
 	return nil

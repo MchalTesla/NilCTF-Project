@@ -25,6 +25,8 @@ var (
 	ErrUserNotFound             = errors.New("ERR_USER_NOT_FOUND")             // 未找到用户
 	ErrInvalidCredentials 		= errors.New("ERR_INVALID_CREDENTIALS") 	   // 用户名或密码错误
 	ErrUserNotLoggedIn			= errors.New("ERR_USER_NOT_LOGGED_IN")			// 用户未登录
+	ErrUserBanned				= errors.New("ERR_USER_BANNED")					// 用户已被禁止
+	ErrUserPending				= errors.New("ERR_USER_PENDING")				// 用户待验证
 	
 	// 通用错误
 	ErrInvalidInput             = errors.New("ERR_INVALID_INPUT")              // 无效输入
@@ -32,6 +34,7 @@ var (
 	ErrPermissionDenied			= errors.New("ERR_PERMISSION_DENIED")		   // 权限不足
 	ErrNotFound					= errors.New("ERR_NOT_FOUND")				   // 未找到
 	ErrInvalidDescription		= errors.New("ERR_INVALID_DESCRIPTION")		   // 描述无效
+	ErrInvalidName				= errors.New("ERR_INVALID_NAME")				// 名字无效
 	ErrInvalidID				= errors.New("ERR_INVALID_ID")				   // ID无效
 
 	// 中间件错误

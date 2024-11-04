@@ -5,6 +5,7 @@ import (
 	"NilCTF/controllers"
 	"NilCTF/middleware"
 	"NilCTF/repositories"
+	"NilCTF/managers"
 	"NilCTF/services"
 	"net/http"
 	"path/filepath"
@@ -45,7 +46,9 @@ func Setuproutes(r *gin.Engine) {
 
 	// 实例化服务和存储库
 	userRepo := repositories.NewUserRepository(config.DB)
-	userService := services.NewUserService(userRepo)
+	configRepo := repositories.NewConfigRepository(config.DB)
+	userManager := managers.NewUserManager(userRepo, configRepo)
+	userService := services.NewUserService(userManager)
 	homeService := services.NewHomeService(userRepo)
 
 	// 控制器初始化
@@ -73,14 +76,14 @@ func Setuproutes(r *gin.Engine) {
 		// 注册 API 路由
 		apiGroup.POST("/register", func(c *gin.Context) { userControllers.Register(c, userService) })
 		apiGroup.POST("/login", func(c *gin.Context) { userControllers.Login(c, userService) })
+		apiGroup.GET("/user/logout", userControllers.Logout)
 
 		// 受保护路由组
 		protectedGroup := apiGroup.Group("")
-		protectedGroup.Use(postMiddleware.JWTAuthMiddleware("all"))
+		protectedGroup.Use(postMiddleware.JWTAuthMiddleware("all", userManager))
 		{
 			protectedGroup.GET("/index", indexControllers.Index)
 			protectedGroup.GET("/home", func(c *gin.Context) { homeControllers.Home(c, homeService) })
-			protectedGroup.GET("/user/logout", userControllers.Logout)
 			protectedGroup.GET("/user/verify", userControllers.VerifyLogin)
 			protectedGroup.POST("/home/modify", func(c *gin.Context) { homeControllers.Modify(c, userService) })
 		}

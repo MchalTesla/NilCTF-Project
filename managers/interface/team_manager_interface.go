@@ -1,10 +1,9 @@
-package repositories_interface
+package managers_interface
 
 import (
 	"NilCTF/models"
 )
-
-type TeamRepositoryInterface interface {
+type TeamManagerInterface interface {
 	Create(team *models.Team) error
 	Get(ID uint) (*models.Team, error)
 	Update(team *models.Team) error

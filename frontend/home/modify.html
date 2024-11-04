@@ -85,50 +85,60 @@
 
     <script>
         async function hashPassword(password) {
+            if (!password) return ""; // If no password, return empty string
             const encoder = new TextEncoder();
             const data = encoder.encode(password);
             const hashBuffer = await crypto.subtle.digest('SHA-256', data);
             const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            return hashHex; // 返回十六进制字符串
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
         document.getElementById("updateUserForm").addEventListener("submit", async function(event) {
-            event.preventDefault(); // 阻止表单的默认提交行为
+            event.preventDefault(); // Prevent default form submission behavior
 
-            const userID = localStorage.getItem("userID"); // 假设用户 ID 存储在 localStorage 中
-            const updates = {
-                username: document.getElementById("username").value,
-                password: await hashPassword(document.getElementById("password").value), // SHA-256 加密密码
-                description: document.getElementById("description").value,
-                email: document.getElementById("email").value,
-            };
+            // Collect the data only if fields are filled
+            const updates = {};
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            const description = document.getElementById("description").value;
+            const email = document.getElementById("email").value;
 
-            fetch(`/api/home/modify`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}` // 如果需要身份验证
-                },
-                body: JSON.stringify(updates)
-            })
-            .then(response => response.json())
-            .then(data => {
-                const messageDiv = document.getElementById("responseMessage");
-                if (data.status === "success") {
-                    messageDiv.innerHTML = `<p style="color: green;">${data.message}</p>`;
-                    alert(data.message); // 弹窗提示成功
-                    window.location.href = data.redirect; // 跳转到指定位置
-                } else {
-                    messageDiv.innerHTML = `<p style="color: red;">${data.message}</p>`;
-                }
-            })
-            .catch((error) => {
-                console.error("Error:", error);
-                document.getElementById("responseMessage").innerHTML = `<p style="color: red;">Failed to update user: ${error.message}</p>`;
-            });
+            if (username) updates.username = username;
+            if (password) updates.password = await hashPassword(password);
+            if (description) updates.description = description;
+            if (email) updates.email = email;
+
+            // Send the updates only if there's at least one field
+            if (Object.keys(updates).length > 0) {
+                fetch(`/api/home/modify`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    },
+                    body: JSON.stringify(updates)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const messageDiv = document.getElementById("responseMessage");
+                    if (data.status === "success") {
+                        messageDiv.innerHTML = `<p style="color: green;">${data.message}</p>`;
+                        alert(data.message);
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        }
+                    } else {
+                        messageDiv.innerHTML = `<p style="color: red;">${data.message}</p>`;
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                    document.getElementById("responseMessage").innerHTML = `<p style="color: red;">Failed to update user: ${error.message}</p>`;
+                });
+            } else {
+                document.getElementById("responseMessage").innerHTML = `<p style="color: red;">Please fill in at least one field to update.</p>`;
+            }
         });
     </script>
-    <script src="/js/utils.js"></script>
 </body>
 </html>

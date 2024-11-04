@@ -4,7 +4,7 @@ import (
 	"NilCTF/config"
 	"NilCTF/error_code"
 	"NilCTF/models"
-	"NilCTF/repositories"
+	"NilCTF/managers"
 	"net/http"
 	"strings"
 	"time"
@@ -46,7 +46,6 @@ func parseToken(tokenString string) (*jwt.Token, *Claims, error) {
 }
 
 type PostMiddleware struct {
-
 }
 
 func NewPostMiddleware() *PostMiddleware {
@@ -60,7 +59,7 @@ func NewPostMiddleware() *PostMiddleware {
 // - "admin": 仅允许管理员角色访问
 // - "user": 允许用户和管理员角色访问
 // - "organizer": 允许比赛创建者访问
-func (h *PostMiddleware) JWTAuthMiddleware(role string) gin.HandlerFunc {
+func (h *PostMiddleware) JWTAuthMiddleware(role string, UM *managers.UserManager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := c.GetHeader("Authorization")
 		if !isValidTokenHeader(tokenString) {
@@ -77,14 +76,14 @@ func (h *PostMiddleware) JWTAuthMiddleware(role string) gin.HandlerFunc {
 		}
 
 		var user *models.User
-		if user, err = repositories.NewUserRepository(config.DB).Read(claims.ID, "", ""); err != nil {
+		if user, err = UM.Get(claims.ID, "", ""); err != nil {
 			respondWithError(c, error_code.ErrUserNotFound)
 			return
 		}
 
 		// 判断用户角色，如果不符合某个角色，就限制访问
 		switch role {
-		case "all": 
+		case "all":
 		case "admin":
 			if user.Role != "admin" {
 				respondWithError(c, error_code.ErrPermissionDenied)

@@ -1,12 +1,11 @@
 package controllers
 
 import (
+	"NilCTF/dto"
 	"NilCTF/error_code"
 	"NilCTF/middleware"
 	"NilCTF/services/interface"
-	"NilCTF/models"
 	"net/http"
-	"errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,20 +25,24 @@ func (r *UserControllers) Login(c *gin.Context, US services_interface.UserServic
 		return
 	}
 
-	user, err := US.Login(input.LoginIdentifier, input.Password)
+	userID, err := US.Login(input.LoginIdentifier, input.Password)
 
 	if err != nil {
 		httpStatus := http.StatusInternalServerError
 		if err != error_code.ErrInternalServer{
 			httpStatus = http.StatusUnauthorized
-			err =  error_code.ErrInvalidCredentials
+			switch err {
+			case error_code.ErrUserBanned, error_code.ErrUserPending:
+			default:
+				err =  error_code.ErrInvalidCredentials
+			}
 		}
 		c.JSON(httpStatus, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
 	postMiddleware := middleware.NewPostMiddleware()
-	token, err := postMiddleware.GenerateToken(user.ID)
+	token, err := postMiddleware.GenerateToken(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": error_code.ErrInternalServer.Error()})
 		return
@@ -54,14 +57,14 @@ func (r *UserControllers) Logout(c *gin.Context) {
 
 func (r *UserControllers) Register(c *gin.Context, US services_interface.UserServiceInterface) {
 
-	var user models.User
+	var user dto.UserCreate
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": error_code.ErrInvalidInput.Error()})
 		return
 	}
 
 	if err := US.Register(&user); err != nil {
-		if errors.Is(err, error_code.ErrInternalServer) {
+		if err == error_code.ErrInternalServer {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
 		} else {
 			c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
@@ -74,5 +77,6 @@ func (r *UserControllers) Register(c *gin.Context, US services_interface.UserSer
 
 func (r *UserControllers) VerifyLogin(c *gin.Context) {
 	userRole, _ := c.Get("userRole")
-	c.JSON(http.StatusOK, gin.H{"status": "success", "user_role": userRole})
+	userStatus, _ := c.Get("userStatus")
+	c.JSON(http.StatusOK, gin.H{"status": "success", "user_role": userRole, "user_status": userStatus})
 }

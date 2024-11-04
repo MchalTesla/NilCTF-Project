@@ -3,7 +3,6 @@ package repositories
 import (
 	"NilCTF/error_code"
 	"NilCTF/models"
-	"errors"
 
 	"gorm.io/gorm"
 )
@@ -25,49 +24,32 @@ func (r *CompetitionRepository) Create(competition *models.Competition) error {
 		return error_code.ErrInvalidID
 	}
 
-	// 检查比赛是否已存在
-	if err := r.DB.Where("name = ?", competition.Name).First(&models.Competition{}).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			// 创建新比赛
-			if err := r.DB.Create(competition).Error; err != nil {
-				// 系统错误处理
-				return error_code.ErrInternalServer
-			}
-			return nil
-		}
+	if err := r.DB.Create(competition).Error; err != nil {
 		// 系统错误处理
 		return error_code.ErrInternalServer
 	}
-
-	// 比赛已存在
-	return error_code.ErrCompetitionAlreadyExists
+	return nil
 }
 
-// Read 根据ID、名称或所有者ID查找Competition
-func (r *CompetitionRepository) Read(ID uint, name string, ownerID uint) ([]models.Competition, error) {
-	var ExistingCompetitions []models.Competition
+// Get 根据ID、名称或所有者ID查找Competition
+func (r *CompetitionRepository) Get(ID uint) (*models.Competition, error) {
+	var ExistingCompetition models.Competition
 
-	// 根据ID、名称或所有者ID查找比赛
-	var err error
-	switch {
-	case ID != 0:
-		err = r.DB.Find(&ExistingCompetitions, ID).Error
-	case name != "":
-		err = r.DB.Where("name = ?", name).Find(&ExistingCompetitions).Error
-	case ownerID != 0:
-		err = r.DB.Where("owner_id = ?", ownerID).Find(&ExistingCompetitions).Error
-	default:
-		return nil, error_code.ErrInvalidInput
+	// 根据ID查找比赛
+	if ID == 0 {
+		return nil, error_code.ErrInvalidID
 	}
 
-	if err != nil {
-		// 系统错误处理
-		return nil, error_code.ErrInternalServer
-	} else if len(ExistingCompetitions) == 0 {
-		return nil, error_code.ErrCompetitionNotFound
+	if err := r.DB.First(&ExistingCompetition, ID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, error_code.ErrCompetitionNotFound
+		} else {
+			return nil, error_code.ErrInternalServer
+		}
 	}
 
-	return ExistingCompetitions, nil
+
+	return &ExistingCompetition, nil
 }
 
 // Update 更新Competition信息, ID必须存在
@@ -77,24 +59,8 @@ func (r *CompetitionRepository) Update(competition *models.Competition) error {
 		return error_code.ErrInvalidID
 	}
 
-	// 检查比赛ID是否存在
-	if err := r.DB.Where("id = ?", competition.ID).First(&models.Competition{}).Error; err == nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return error_code.ErrUserNotFound
-		}
-		return error_code.ErrInternalServer
-	}
-
-	// 检查比赛名字是否存在
-	if err := r.DB.Where("name = ? AND id != ?", competition.Name, competition.ID).First(&models.Competition{}).Error; err == nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return error_code.ErrCompetitionAlreadyExists
-		}
-		return error_code.ErrInternalServer
-	}
-
 	// 更新比赛信息
-	if err := r.DB.Model(competition).Updates(competition).Error; err != nil {
+	if err := r.DB.Updates(competition).Error; err != nil {
 		// 系统错误处理
 		return error_code.ErrInternalServer
 	}
@@ -107,13 +73,44 @@ func (r *CompetitionRepository) Delete(competition *models.Competition) error {
 	if competition.ID == 0 {
 		return error_code.ErrInvalidID
 	}
-	
+
 	if err := r.DB.Delete(competition).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if err == gorm.ErrRecordNotFound {
 			return error_code.ErrCompetitionNotFound
 		}
 		// 系统错误处理
 		return error_code.ErrInternalServer
 	}
 	return nil
+}
+
+
+func (r *CompetitionRepository) List(filters map[string]interface{}, limit, offset int, isFuzzy bool) ([]models.Competition, error) {
+	var competitions []models.Competition
+	query := r.DB
+
+	// 应用过滤条件
+	for key, value := range filters {
+		if isFuzzy { // 如果启用模糊搜索
+			// 使用 LIKE 查询并在值两端添加 % 通配符
+			query = query.Where(key+" LIKE ?", "%"+value.(string)+"%")
+		} else {
+			// 精确匹配
+			query = query.Where(key+" = ?", value)
+		}
+	}
+
+	// 设置分页
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+	if offset >= 0 {
+		query = query.Offset(offset)
+	}
+
+	// 执行查询
+	if err := query.Find(&competitions).Error; err != nil {
+		return []models.Competition{}, error_code.ErrInternalServer
+	}
+	return competitions, nil
 }

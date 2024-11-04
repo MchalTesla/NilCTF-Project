@@ -5,7 +5,6 @@ import (
 	"NilCTF/services/interface"
 	"NilCTF/dto"
 	"net/http"
-	"errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,7 +23,7 @@ func (r *HomeControllers) Home(c *gin.Context, US services_interface.HomeService
     // 获取用户信息
     updates, err := US.Info(userID)
     if err != nil {
-        if errors.Is(err, error_code.ErrInternalServer) {
+        if err == error_code.ErrInternalServer {
             c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": error_code.ErrInvalidInput.Error()})
         } else {
             c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
@@ -63,9 +62,9 @@ func (r *HomeControllers) Modify(c *gin.Context, US services_interface.UserServi
     }
 
     // 调用服务层更新用户信息
-    if err := US.Update(userID, updates); err != nil {
+    if err := US.Update(userID, &updates); err != nil {
         // 根据错误类型返回不同的状态码
-		if errors.Is(err, error_code.ErrInternalServer) {
+		if err == error_code.ErrInternalServer {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": error_code.ErrInternalServer.Error()})
 		} else {
 			c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
