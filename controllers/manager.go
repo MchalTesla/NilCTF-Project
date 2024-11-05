@@ -1,60 +1,71 @@
 package controllers
 
-// import (
-// 	"net/http"
-// 	"strconv"
+import (
+	"NilCTF/error_code"
+	"NilCTF/services/interface"
+	"net/http"
+	"strconv"
 
-// 	"github.com/gin-gonic/gin"
-// 	"gorm.io/gorm"
-// 	"NilCTF/models"
-// )
+	"github.com/gin-gonic/gin"
+)
 
-// type AdminUserController struct {
-// 	DB *gorm.DB
-// }
+type ManagerController struct {
+	MS services_interface.ManagerService
+}
 
-// // ListUsers 列出所有用户，可分页并选择每页显示数量
-// func (auc *AdminUserController) ListUsers(c *gin.Context) {
-// 	// 获取分页参数
-// 	pageStr := c.PostForm("page")
-// 	if pageStr == "" {
-// 		pageStr = "1"
-// 	}
+func NewManagerController(MS services_interface.ManagerService) *ManagerController {
+	return &ManagerController{MS: MS}
+}
 
-// 	perPageStr := c.PostForm("per_page")
-// 	if perPageStr == "" {
-// 		perPageStr = "10"
-// 	}
+func (mc *ManagerController) GetUsersCount(c *gin.Context) {
+	userCount, err := mc.MS.GetUsersCount()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": error_code.ErrInvalidPageParameter.Error()})
+		return
+	}
 
-// 	// 解析分页参数
-// 	page, err := strconv.Atoi(pageStr)
-// 	if err != nil || page < 1 {
-// 		page = 1
-// 	}
-// 	perPage, err := strconv.Atoi(perPageStr)
-// 	if err != nil || perPage < 1 {
-// 		perPage = 10
-// 	}
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "message": userCount})
+}
 
-// 	// 获取用户数据
-// 	var users []models.User
-// 	if err := auc.DB.Offset((page - 1) * perPage).Limit(perPage).Find(&users).Error; err != nil {
-// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve users"})
-// 		return
-// 	}
+// ListUsers 列出所有用户，可分页并选择每页显示数量
+func (mc *ManagerController) ListUsers(c *gin.Context) {
+	// 从查询参数获取分页信息
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "10")
 
-// 	// 获取总用户数
-// 	var total int64
-// 	auc.DB.Model(&models.User{}).Count(&total)
+	// 转换分页参数为整数
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": error_code.ErrInvalidPageParameter.Error()})
+		return
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": error_code.ErrInvalidLimitParameter.Error()})
+		return
+	}
+	
+	usersDTO, err := mc.MS.ListAllUsers(page, limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": error_code.ErrInternalServer})
+		return
+	}
 
-// 	c.JSON(http.StatusOK, gin.H{
-// 		"page":        page,
-// 		"per_page":    perPage,
-// 		"total":       total,
-// 		"total_pages": (total + int64(perPage) - 1) / int64(perPage),
-// 		"users":       users,
-// 	})
-// }
+	pages, err := mc.MS.GetTotalPages(limit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": error_code.ErrInternalServer})
+		return
+	}
+
+	// 返回用户列表
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok", "message": gin.H{
+			"pages": pages,
+			"page": page,
+			 "users": usersDTO,
+		},
+	})
+}
 
 // // UpdateUserByAdmin 管理员更新用户信息
 // func (auc *AdminUserController) UpdateUserByAdmin(c *gin.Context) {

@@ -11,9 +11,25 @@ import (
 )
 
 type UserControllers struct {
+	US services_interface.UserServiceInterface
+	cookieSecure bool
+	jwtTime int
+	postMiddleware *middleware.PostMiddleware
 }
 
-func (r *UserControllers) Login(c *gin.Context, US services_interface.UserServiceInterface) {
+func NewUserControllers(US services_interface.UserServiceInterface, 
+	cookieSecure bool, 
+	jwtTime int, 
+	postMiddleware *middleware.PostMiddleware) *UserControllers {
+	return &UserControllers{
+		US: US,
+		cookieSecure: cookieSecure,
+		jwtTime: jwtTime,
+		postMiddleware: postMiddleware,
+	}
+}
+
+func (r *UserControllers) Login(c *gin.Context) {
 
 	var input struct {
 		LoginIdentifier string `json:"loginidentifier"`
@@ -25,37 +41,41 @@ func (r *UserControllers) Login(c *gin.Context, US services_interface.UserServic
 		return
 	}
 
-	userID, err := US.Login(input.LoginIdentifier, input.Password)
+	userID, err := r.US.Login(input.LoginIdentifier, input.Password)
 
 	if err != nil {
 		httpStatus := http.StatusInternalServerError
-		if err != error_code.ErrInternalServer{
+		if err != error_code.ErrInternalServer {
 			httpStatus = http.StatusUnauthorized
 			switch err {
 			case error_code.ErrUserBanned, error_code.ErrUserPending:
 			default:
-				err =  error_code.ErrInvalidCredentials
+				err = error_code.ErrInvalidCredentials
 			}
 		}
 		c.JSON(httpStatus, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 
-	postMiddleware := middleware.NewPostMiddleware()
-	token, err := postMiddleware.GenerateToken(userID)
+	token, err := r.postMiddleware.GenerateToken(userID, r.jwtTime)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": error_code.ErrInternalServer.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "登录成功", "token": token, "redirect": "/index"})
+	// Set token as a cookie
+	c.SetCookie("auth_token", token, r.jwtTime * 60 * 60, "/", "", r.cookieSecure, true)
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "登录成功", "redirect": "/index"})
 }
 
+
 func (r *UserControllers) Logout(c *gin.Context) {
+	c.SetCookie("auth_token", "", -1, "/", "/", r.cookieSecure, true)
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "退出登录成功", "redirect": "/index", "clear_token": true})
 }
 
-func (r *UserControllers) Register(c *gin.Context, US services_interface.UserServiceInterface) {
+func (r *UserControllers) Register(c *gin.Context) {
 
 	var user dto.UserCreate
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -63,7 +83,7 @@ func (r *UserControllers) Register(c *gin.Context, US services_interface.UserSer
 		return
 	}
 
-	if err := US.Register(&user); err != nil {
+	if err := r.US.Register(&user); err != nil {
 		if err == error_code.ErrInternalServer {
 			c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
 		} else {
@@ -79,4 +99,5 @@ func (r *UserControllers) VerifyLogin(c *gin.Context) {
 	userRole, _ := c.Get("userRole")
 	userStatus, _ := c.Get("userStatus")
 	c.JSON(http.StatusOK, gin.H{"status": "success", "user_role": userRole, "user_status": userStatus})
+	return
 }

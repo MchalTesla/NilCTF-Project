@@ -107,3 +107,11 @@ func (r *UserRepository) List(filters map[string]interface{}, limit, offset int,
 	}
 	return users, nil
 }
+
+func (r *UserRepository) Count() (int64, error) {
+	var count int64
+	if err := r.DB.Model(&models.User{}).Count(&count).Error; err != nil {
+		return 0, error_code.ErrInternalServer
+	}
+	return count, nil
+}

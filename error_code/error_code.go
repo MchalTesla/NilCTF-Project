@@ -47,4 +47,8 @@ var (
 	ErrFileTooLarge				= errors.New("ERR_FILE_TOO_LARGE")				// 上传的文件太大
 	ErrTooManyFiles				= errors.New("ERR_TOO_MANY_FILES")				// 上传的文件太多
 	ErrUnsupportedContentType	= errors.New("ERR_UNSUPPORTED_CONTENT_TYPE")		// 请求体类型错误，只允许JSON和文件上传
+
+	// 控制器错误
+	ErrInvalidPageParameter		= errors.New("ERR_INVALID_PAGE_PARAMETER")		// 错误的页数
+	ErrInvalidLimitParameter	= errors.New("ERR_INVALID_LIMIT_PARAMETER")		// 错误的每页行数
 )

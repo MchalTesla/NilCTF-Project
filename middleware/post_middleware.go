@@ -3,11 +3,11 @@ package middleware
 import (
 	"NilCTF/config"
 	"NilCTF/error_code"
+	managers_interface "NilCTF/managers/interface"
 	"NilCTF/models"
-	"NilCTF/managers"
 	"net/http"
-	"strings"
 	"time"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -19,15 +19,32 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// isValidTokenHeader 检查授权头是否有效
-func isValidTokenHeader(header string) bool {
-	return header != "" && strings.HasPrefix(header, "Bearer ")
-}
-
 // respondWithError 响应错误
 func respondWithError(c *gin.Context, err error) {
 	message := err.Error()
-	c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": message, "redirect": "/login"})
+	isAPIRequest := strings.HasPrefix(c.FullPath(), "/api/")
+
+	switch err {
+	case error_code.ErrPermissionDenied:
+		if isAPIRequest {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": message})
+		} else {
+			c.Redirect(http.StatusFound, "/forbidden")
+		}
+	case error_code.ErrUserNotLoggedIn:
+		if isAPIRequest {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": message, "redirect": "/login"})
+		} else {
+			c.Redirect(http.StatusFound, "/login")
+		}
+	default:
+		if isAPIRequest {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": message})
+		} else {
+			c.Redirect(http.StatusFound, "/server_error")
+		}
+	}
+
 	c.Abort()
 }
 
@@ -46,10 +63,11 @@ func parseToken(tokenString string) (*jwt.Token, *Claims, error) {
 }
 
 type PostMiddleware struct {
+	UM managers_interface.UserManagerInterface
 }
 
-func NewPostMiddleware() *PostMiddleware {
-	return &PostMiddleware{}
+func NewPostMiddleware(UM managers_interface.UserManagerInterface) *PostMiddleware {
+	return &PostMiddleware{UM: UM}
 }
 
 // JWTAuthMiddleware JWT 认证中间件
@@ -59,29 +77,30 @@ func NewPostMiddleware() *PostMiddleware {
 // - "admin": 仅允许管理员角色访问
 // - "user": 允许用户和管理员角色访问
 // - "organizer": 允许比赛创建者访问
-func (h *PostMiddleware) JWTAuthMiddleware(role string, UM *managers.UserManager) gin.HandlerFunc {
+func (h *PostMiddleware) JWTAuthMiddleware(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString := c.GetHeader("Authorization")
-		if !isValidTokenHeader(tokenString) {
+		// 从 Cookie 获取 token
+		tokenString, err := c.Cookie("auth_token")
+		if err != nil {
 			respondWithError(c, error_code.ErrUserNotLoggedIn)
 			return
 		}
 
-		tokenString = tokenString[7:] // 去掉 "Bearer " 前缀
-
+		// 解析 token
 		token, claims, err := parseToken(tokenString)
 		if err != nil || !token.Valid || claims.ExpiresAt.Time.Before(time.Now()) {
 			respondWithError(c, error_code.ErrUserNotLoggedIn)
 			return
 		}
 
+		// 根据 claims.ID 获取用户信息
 		var user *models.User
-		if user, err = UM.Get(claims.ID, "", ""); err != nil {
+		if user, err = h.UM.Get(claims.ID, "", ""); err != nil {
 			respondWithError(c, error_code.ErrUserNotFound)
 			return
 		}
 
-		// 判断用户角色，如果不符合某个角色，就限制访问
+		// 判断用户角色，如果不符合某个角色，限制访问
 		switch role {
 		case "all":
 		case "admin":
@@ -104,7 +123,7 @@ func (h *PostMiddleware) JWTAuthMiddleware(role string, UM *managers.UserManager
 		// 将用户信息保存到上下文中
 		c.Set("userID", user.ID)
 		c.Set("userName", user.Username)
-		c.Set("useremail", user.Email)
+		c.Set("userEmail", user.Email)
 		c.Set("userStatus", user.Status)
 		c.Set("userRole", user.Role)
 		c.Next()
@@ -112,11 +131,11 @@ func (h *PostMiddleware) JWTAuthMiddleware(role string, UM *managers.UserManager
 }
 
 // GenerateToken 生成 JWT Token
-func (h *PostMiddleware) GenerateToken(ID uint) (string, error) {
+func (h *PostMiddleware) GenerateToken(ID uint, jwtTime int) (string, error) {
 	claims := Claims{
 		ID: ID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(48 * time.Hour)), // 设置过期时间
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(jwtTime) * time.Hour)), // 设置过期时间
 			IssuedAt:  jwt.NewNumericDate(time.Now()),                     // 设置签发时间
 		},
 	}

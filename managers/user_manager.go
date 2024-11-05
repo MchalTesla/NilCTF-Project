@@ -155,3 +155,7 @@ func (m *UserManager) Delete(user *models.User) error {
 func (m *UserManager) List(filters map[string]interface{}, limit, offset int, isFuzzy bool) ([]models.User, error) {
 	return m.UR.List(filters, limit, offset, isFuzzy)
 }
+
+func (m *UserManager) Count() (int64, error) {
+	return m.UR.Count()
+}

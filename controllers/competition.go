@@ -13,6 +13,7 @@ type CompetitionControllers struct {
 
 }
 
+
 func (r *CompetitionControllers) ListCompetition(c *gin.Context) {
 	var competitions []models.Competition
 

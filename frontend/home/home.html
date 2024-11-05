@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -60,33 +60,56 @@
 </div>
 
 <script>
+    // 从后端获取用户角色和状态
+    async function verifyUser() {
+        const response = await fetch('/api/verify', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token'), // 从 localStorage 获取 token
+            }
+        });
+
+        return response.json();
+    }
+
     // 从后端获取用户信息
     async function fetchUserInfo() {
         try {
-            const token = localStorage.getItem('token'); // 从 localStorage 获取 token
-            const response = await fetch('/api/home', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': token ? 'Bearer ' + token : '', // 添加 Authorization 头
-                }
-            });
+            const userVerification = await verifyUser();
+            if (userVerification.status === "success") {
+                // 如果用户验证成功，则获取用户信息
+                const token = localStorage.getItem('token'); // 从 localStorage 获取 token
+                const userInfoResponse = await fetch('/api/home', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token, // 添加 Authorization 头
+                    }
+                });
 
-            const data = await response.json();
-            
-            if (response.ok && data.status === "success") {
-                const userInfo = data.message;
-                document.getElementById('user-info').innerHTML = `
-                    <p><strong>创建时间:</strong> ${userInfo.created_at}</p>
-                    <p><strong>用户名:</strong> ${userInfo.username}</p>
-                    <p><strong>描述:</strong> ${userInfo.description}</p>
-                    <p><strong>邮箱:</strong> ${userInfo.email}</p>
-                    <p><strong>状态:</strong> ${userInfo.status}</p>
-                    <p><strong>角色:</strong> ${userInfo.role}</p>
-                    <p><strong>标签:</strong> ${userInfo.tag}</p>
-                `;
+                const data = await userInfoResponse.json();
+
+                if (userInfoResponse.ok && data.status === "success") {
+                    const userInfo = data.message;
+                    document.getElementById('user-info').innerHTML = `
+                        <p><strong>创建时间:</strong> ${userInfo.created_at}</p>
+                        <p><strong>用户名:</strong> ${userInfo.username}</p>
+                        <p><strong>描述:</strong> ${userInfo.description}</p>
+                        <p><strong>邮箱:</strong> ${userInfo.email}</p>
+                        <p><strong>状态:</strong> ${userInfo.status}</p>
+                        <p><strong>角色:</strong> ${userInfo.role}</p>
+                        <p><strong>标签:</strong> ${userInfo.tag}</p>
+                    `;
+                } else {
+                    document.getElementById('error-message').innerText = data.message || "无法获取用户信息";
+                }
+            } else if (userVerification.status === "fail" && userVerification.redirect) {
+                // 如果用户未登录，且有 redirect 字段，则跳转
+                window.location.href = userVerification.redirect;
             } else {
-                document.getElementById('error-message').innerText = data.message || "无法获取用户信息";
+                document.getElementById('error-message').innerText = "您未登录或没有权限访问该页面";
+                document.getElementsByClassName('modify-btn')[0].style.display = 'none'; // 隐藏修改按钮
             }
         } catch (error) {
             document.getElementById('error-message').innerText = "请求失败，请稍后重试";

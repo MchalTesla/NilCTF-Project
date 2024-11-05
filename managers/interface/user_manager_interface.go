@@ -10,4 +10,5 @@ type UserManagerInterface interface {
 	Update(user *models.User) error
 	Delete(user *models.User) error
 	List(filters map[string]interface{}, limit, offset int, isFuzzy bool) ([]models.User, error)
+	Count() (int64, error)
 }

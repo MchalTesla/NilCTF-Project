@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理</title>
+    <script src="/js/jquery-3.5.1.min.js"></script> <!-- 使用本地的 jQuery 库 -->
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .edit-button {
+            cursor: pointer;
+            color: blue;
+        }
+        .error-message {
+            color: red;
+        }
+        .pagination {
+            margin-top: 20px;
+        }
+        .pagination button {
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>用户管理</h1>
+    <div id="error-message" class="error-message" style="display: none;"></div>
+    <div>
+        <h2>用户总数: <span id="userCount">0</span></h2>
+    </div>
+    <table id="userTable">
+        <thead>
+            <tr>
+                <th>创建时间</th>
+                <th>用户名</th>
+                <th>描述</th>
+                <th>邮箱</th>
+                <th>状态</th>
+                <th>角色</th>
+                <th>标签</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 用户列表将通过 JavaScript 动态插入 -->
+        </tbody>
+    </table>
+    <div class="pagination">
+        <button id="prevPage" disabled>上一页</button>
+        <span id="currentPage">1</span>
+        <button id="nextPage">下一页</button>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+
+        // 验证用户角色
+        async function verifyUser() {
+            const response = await fetch('/api/verify', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token'), // 从 localStorage 获取 token
+                }
+            });
+            return response.json();
+        }
+
+        $(document).ready(async function() {
+            const userVerification = await verifyUser();
+
+            if (userVerification.status === "success") {
+                if (userVerification.user_role !== "admin") {
+                    // 如果用户角色不是管理员，显示错误消息并重定向
+                    $('#error-message').text("您没有权限访问此页面").show();
+                    setTimeout(() => {
+                        window.location.href = '/'; // 可以设置重定向到其他页面
+                    }, 3000); // 3秒后自动重定向
+                    return; // 结束后续代码
+                }
+            } else if (userVerification.status === "fail" && userVerification.redirect) {
+                // 如果用户未登录，且有 redirect 字段，则跳转
+                window.location.href = userVerification.redirect;
+                return;
+            } else {
+                $('#error-message').text("验证失败，请重新登录").show();
+                return;
+            }
+
+            // 获取用户总数
+            $.get('/api/manager/users_count', function(data) {
+                if (data.status === 'ok') {
+                    $('#userCount').text(data.message);
+                }
+            });
+
+            // 获取用户列表
+            function loadUsers(page = 1) {
+                $.post('/api/manager/list_users', JSON.stringify({ page: page, limit: 10 }), function(data) {
+                    if (data.status === 'ok') {
+                        totalPages = data.message.pages;
+                        currentPage = page;
+                        $('#currentPage').text(currentPage);
+
+                        let users = data.message.users;
+                        let userTableBody = $('#userTable tbody');
+                        userTableBody.empty(); // 清空表格内容
+                        users.forEach(user => {
+                            let tags = user.Tag ? user.Tag.join(", ") : '无'; // 如果 Tag 为空则显示'无'
+                            userTableBody.append(`
+                                <tr>
+                                    <td>${new Date(user.CreatedAt).toLocaleString()}</td>
+                                    <td>${user.Username}</td>
+                                    <td>${user.Description || '无'}</td>
+                                    <td>${user.Email}</td>
+                                    <td>${user.Status}</td>
+                                    <td>${user.Role}</td>
+                                    <td>${tags}</td>
+                                    <td><span class="edit-button" data-username="${user.Username}">修改</span></td>
+                                </tr>
+                            `);
+                        });
+
+                        // 更新分页按钮的状态
+                        $('#prevPage').prop('disabled', currentPage <= 1);
+                        $('#nextPage').prop('disabled', currentPage >= totalPages);
+                    }
+                }, 'json');
+            }
+
+            loadUsers(); // 初次加载用户
+
+            // 处理修改用户信息
+            $(document).on('click', '.edit-button', function() {
+                let username = $(this).data('username');
+                let newEmail = prompt('请输入新邮箱:', '');
+                let newStatus = prompt('请输入新状态:', '');
+
+                if (newEmail && newStatus) {
+                    $.ajax({
+                        url: '/api/home/modify', // 假设有个更新用户信息的接口
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            username: username,
+                            email: newEmail,
+                            status: newStatus
+                        }),
+                        success: function(response) {
+                            if (response.status === 'ok') {
+                                alert('用户信息已更新');
+                                loadUsers(); // 重新加载用户列表
+                            } else {
+                                alert('更新失败: ' + response.message);
+                            }
+                        },
+                        error: function() {
+                            alert('请求失败，请重试。');
+                        }
+                    });
+                }
+            });
+
+            // 翻页功能
+            $('#prevPage').click(function() {
+                if (currentPage > 1) {
+                    loadUsers(currentPage - 1);
+                }
+            });
+
+            $('#nextPage').click(function() {
+                if (currentPage < totalPages) {
+                    loadUsers(currentPage + 1);
+                }
+            });
+        });
+    </script>
+    <script src="/js/utils.js"></script>
+</body>
+</html>
