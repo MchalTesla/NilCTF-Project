@@ -3,7 +3,7 @@ package managers
 import (
 	"NilCTF/error_code"
 	"NilCTF/models"
-	"NilCTF/repositories/interface"
+	repositories_interface "NilCTF/repositories/interface"
 	"NilCTF/utils"
 )
 
@@ -62,7 +62,6 @@ func (m *TeamManager) Get(ID uint) (*models.Team, error) {
 	}
 	return m.TR.Get(ID)
 }
-
 
 func (m *TeamManager) Delete(team *models.Team) error {
 	if team.ID == 0 {

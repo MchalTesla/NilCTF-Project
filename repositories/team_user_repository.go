@@ -66,7 +66,7 @@ func (r *TeamUserRepository) Get(ID, teamID, userID uint) ([]models.TeamUser, er
 
 // Delete 删除队伍和用户的映射
 func (r *TeamUserRepository) Delete(teamUser *models.TeamUser) error {
-	if err := r.DB.Delete(teamUser).Error; err != nil {
+	if err := r.DB.Unscoped().Delete(teamUser).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return error_code.ErrUserNotInTeam
 		}

@@ -71,7 +71,7 @@ func (r *TeamRepository) Delete(team *models.Team) error {
 		return error_code.ErrInvalidID
 	}
 
-	if err := r.DB.Delete(team).Error; err != nil {
+	if err := r.DB.Unscoped().Delete(team).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return error_code.ErrTeamNotFound
 		}

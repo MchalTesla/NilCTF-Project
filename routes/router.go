@@ -64,7 +64,7 @@ func Setuproutes(r *gin.Engine) {
 
 	// 配置前置中间件
 	r.Use(
-		preMiddleware.RateLimitMiddleware(10, 20, 5000),
+		preMiddleware.RateLimitMiddleware(5, 10, 5000),
 		preMiddleware.CSPMiddleware(),
 	)
 
@@ -119,6 +119,8 @@ func Setuproutes(r *gin.Engine) {
 		{
 			adminGroup.GET("/users_count", managerController.GetUsersCount)
 			adminGroup.POST("/list_users", managerController.ListUsers)
+			adminGroup.POST("/update", managerController.UpdateUserByAdmin)
+			adminGroup.POST("/delete", managerController.DeleteUserByAdmin)
 		}
 
 		// 不受保护的比赛列表路由

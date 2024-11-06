@@ -48,7 +48,6 @@ func (r *CompetitionRepository) Get(ID uint) (*models.Competition, error) {
 		}
 	}
 
-
 	return &ExistingCompetition, nil
 }
 
@@ -74,7 +73,7 @@ func (r *CompetitionRepository) Delete(competition *models.Competition) error {
 		return error_code.ErrInvalidID
 	}
 
-	if err := r.DB.Delete(competition).Error; err != nil {
+	if err := r.DB.Unscoped().Delete(competition).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return error_code.ErrCompetitionNotFound
 		}
@@ -83,7 +82,6 @@ func (r *CompetitionRepository) Delete(competition *models.Competition) error {
 	}
 	return nil
 }
-
 
 func (r *CompetitionRepository) List(filters map[string]interface{}, limit, offset int, isFuzzy bool) ([]models.Competition, error) {
 	var competitions []models.Competition

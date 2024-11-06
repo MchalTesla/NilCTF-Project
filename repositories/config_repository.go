@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"NilCTF/models"
+
 	"gorm.io/gorm"
 )
 
@@ -31,7 +32,7 @@ func (repo *ConfigRepository) Get(key string) (string, error) {
 
 // 删除配置项
 func (repo *ConfigRepository) Delete(key string) error {
-	return repo.DB.Where("key = ?", key).Delete(&models.Config{}).Error
+	return repo.DB.Where("key = ?", key).Unscoped().Delete(&models.Config{}).Error
 }
 
 // ListConfig 根据条件查找配置

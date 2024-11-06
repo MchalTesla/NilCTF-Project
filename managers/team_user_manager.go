@@ -1,9 +1,9 @@
 package managers
 
 import (
-	"NilCTF/models"
-	"NilCTF/repositories/interface"
 	"NilCTF/error_code"
+	"NilCTF/models"
+	repositories_interface "NilCTF/repositories/interface"
 )
 
 type TeamUserManager struct {
@@ -20,7 +20,7 @@ func (m *TeamUserManager) Create(teamUser *models.TeamUser) error {
 	if teamUser.ID != 0 {
 		return error_code.ErrInvalidID
 	}
-	
+
 	// 检查是否已有该用户和队伍的映射
 	existingMappings, err := m.TUR.Get(0, teamUser.TeamID, teamUser.UserID)
 	if err != nil {
@@ -51,7 +51,7 @@ func (m *TeamUserManager) Update(teamUser *models.TeamUser) error {
 
 	// 如果 TeamID 或 UserID 变更，拒绝更新
 	if (teamUser.TeamID != 0 && existingMappings[0].TeamID != teamUser.TeamID) ||
-	(teamUser.UserID != 0 && existingMappings[0].UserID != teamUser.UserID) {
+		(teamUser.UserID != 0 && existingMappings[0].UserID != teamUser.UserID) {
 		return error_code.ErrInvalidID
 	}
 

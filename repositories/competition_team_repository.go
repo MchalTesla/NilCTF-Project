@@ -76,7 +76,7 @@ func (r *CompetitionTeamRepository) Delete(competitionTeam *models.CompetitionTe
 	if competitionTeam.ID == 0 {
 		return error_code.ErrInvalidID
 	}
-	if err := r.DB.Delete(competitionTeam).Error; err != nil {
+	if err := r.DB.Unscoped().Delete(competitionTeam).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return error_code.ErrTeamNotInCompetition
 		}

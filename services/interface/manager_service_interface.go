@@ -7,7 +7,9 @@ import (
 
 
 type ManagerService interface {
-	ListAllUsers(page int, limit int) ([]dto.UserInfo, error)
+	ListAllUsers(page int, limit int) ([]dto.UserInfoByAdmin, error)
 	GetUsersCount() (int64, error)
 	GetTotalPages(limit int) (int64, error)
+	UpdateUsers(updates *dto.UserUpdateByAdmin) error
+	DeleteUser(ID uint) error
 }

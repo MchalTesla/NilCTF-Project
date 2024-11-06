@@ -1,9 +1,9 @@
 package managers
 
 import (
-	"NilCTF/models"
-	"NilCTF/repositories/interface"
 	"NilCTF/error_code"
+	"NilCTF/models"
+	repositories_interface "NilCTF/repositories/interface"
 )
 
 type CompetitionTeamManager struct {
@@ -47,10 +47,10 @@ func (m *CompetitionTeamManager) Update(competitionTeam *models.CompetitionTeam)
 
 	// 如果 CompetitionID 或 TeamID 变更，拒绝更新
 	if (competitionTeam.CompetitionID != 0 && existingMappings[0].CompetitionID != competitionTeam.CompetitionID) ||
-	(competitionTeam.TeamID != 0 && existingMappings[0].TeamID != competitionTeam.TeamID) {
+		(competitionTeam.TeamID != 0 && existingMappings[0].TeamID != competitionTeam.TeamID) {
 		return error_code.ErrInvalidID
 	}
-	
+
 	return m.CTR.Update(competitionTeam)
 }
 
@@ -59,7 +59,7 @@ func (m *CompetitionTeamManager) Get(ID, competitionID, teamID uint) ([]models.C
 }
 
 func (m *CompetitionTeamManager) Delete(competitionTeam *models.CompetitionTeam) error {
-	if competitionTeam.ID == 0{
+	if competitionTeam.ID == 0 {
 		return error_code.ErrInvalidID
 	}
 	return m.CTR.Delete(competitionTeam)

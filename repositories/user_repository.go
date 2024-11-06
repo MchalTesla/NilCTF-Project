@@ -68,7 +68,7 @@ func (r *UserRepository) Delete(user *models.User) error {
 	if user.ID == 0 {
 		return error_code.ErrInvalidID
 	}
-	if err := r.DB.Delete(user).Error; err != nil {
+	if err := r.DB.Unscoped().Delete(user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return error_code.ErrUserNotFound
 		}
