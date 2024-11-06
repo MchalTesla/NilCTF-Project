@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员工具集</title>
+    <link rel="stylesheet" href="/css/styles.css"> <!-- 引入样式文件 -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        .link {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f2f2f2;
+            border: 1px solid #ddd;
+            text-decoration: none;
+            color: #333;
+        }
+        .link:hover {
+            background-color: #e0e0e0;
+        }
+        .error-message {
+            color: red;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>管理员工具集</h1>
+    <div id="error-message" class="error-message" style="display: none;"></div>
+
+    <div id="admin-content" style="display: none;">
+        <h2>用户管理</h2>
+        <a class="link" href="/manager/users">查看用户列表</a>
+        <a class="link" href="/manager/users/modify">修改用户信息</a>
+        <a class="link" href="/manager/users/create">创建新用户</a>
+
+        <h2>报告管理</h2>
+        <a class="link" href="/manager/reports">查看报告</a>
+
+        <h2>设置</h2>
+        <a class="link" href="/manager/settings">系统设置</a>
+
+        <h2>其他功能</h2>
+        <a class="link" href="/manager/logs">查看系统日志</a>
+    </div>
+
+    <script>
+        // 验证用户角色
+        async function verifyUser() {
+            const response = await fetch('/api/verify', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token'), // 从 localStorage 获取 token
+                }
+            });
+
+            return response.json();
+        }
+
+        // 页面加载时验证用户角色
+        window.onload = async function() {
+            const userVerification = await verifyUser();
+
+            if (userVerification.status === "success") {
+                if (userVerification.user_role === "admin") {
+                    document.getElementById('admin-content').style.display = 'block'; // 显示管理员内容
+                } else {
+                    // 如果用户角色不是管理员，显示错误消息并重定向
+                    const errorMessage = "您没有权限访问此页面";
+                    document.getElementById('error-message').innerText = errorMessage;
+                    document.getElementById('error-message').style.display = 'block';
+                    setTimeout(() => {
+                        window.location.href = '/'; // 可以设置重定向到其他页面
+                    }, 3000); // 3秒后自动重定向
+                }
+            } else if (userVerification.status === "fail" && userVerification.redirect) {
+                // 如果用户未登录，且有 redirect 字段，则跳转
+                window.location.href = userVerification.redirect;
+            } else {
+                document.getElementById('error-message').innerText = "验证失败，请重新登录";
+                document.getElementById('error-message').style.display = 'block';
+            }
+        };
+    </script>
+    <script src="/js/utils.js"></script>
+</body>
+</html>

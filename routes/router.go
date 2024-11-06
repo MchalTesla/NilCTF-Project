@@ -3,13 +3,13 @@ package routes
 import (
 	"NilCTF/config"
 	"NilCTF/controllers"
+	"NilCTF/managers"
 	"NilCTF/middleware"
 	"NilCTF/repositories"
-	"NilCTF/managers"
 	"NilCTF/services"
 	"net/http"
-	"path/filepath"
 	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,11 +33,11 @@ func loadHTMLFiles(r *gin.Engine, path string) error {
 func Setuproutes(r *gin.Engine) {
 
 	// 静态文件目录
-	r.Static("/css", "./frontend/css")
-	r.Static("/js", "./frontend/js")
+	r.Static("/css", "./static/css")
+	r.Static("/js", "./static/js")
 
 	// 加载 HTML 模板文件并处理加载错误
-	if err := loadHTMLFiles(r, "frontend"); err != nil {
+	if err := loadHTMLFiles(r, "static"); err != nil {
 		panic("Failed to load HTML files: " + err.Error())
 	}
 
@@ -55,7 +55,7 @@ func Setuproutes(r *gin.Engine) {
 	homeControllers := &controllers.HomeControllers{}
 	managerController := controllers.NewManagerController(managerService)
 
-		// 初始化 Middleware
+	// 初始化 Middleware
 	preMiddleware := middleware.NewPreMiddleware()
 	postMiddleware := middleware.NewPostMiddleware(userManager)
 
@@ -73,8 +73,8 @@ func Setuproutes(r *gin.Engine) {
 	r.GET("/register", func(c *gin.Context) { c.HTML(http.StatusOK, "register.html", nil) })
 	r.GET("/", func(c *gin.Context) { c.HTML(http.StatusOK, "index.html", nil) })
 	r.GET("/index", func(c *gin.Context) { c.HTML(http.StatusOK, "index.html", nil) })
-	r.GET("/forbidden", func(c *gin.Context) {c.HTML(http.StatusForbidden, "forbidden.html", nil)})
-	r.GET("/server_error", func(c *gin.Context) {c.HTML(http.StatusInternalServerError, "server_error.html", nil)})
+	r.GET("/forbidden", func(c *gin.Context) { c.HTML(http.StatusForbidden, "forbidden.html", nil) })
+	r.GET("/server_error", func(c *gin.Context) { c.HTML(http.StatusInternalServerError, "server_error.html", nil) })
 
 	homeHTMLGroup := r.Group("/home")
 	{
@@ -93,7 +93,6 @@ func Setuproutes(r *gin.Engine) {
 			managerHTMLGroup.GET("/users", func(c *gin.Context) { c.HTML(http.StatusOK, "users.html", nil) })
 		}
 	}
-
 
 	// 创建 API 路由组并添加预处理中间件
 	apiGroup := r.Group("/api")
