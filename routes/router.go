@@ -33,11 +33,11 @@ func loadHTMLFiles(r *gin.Engine, path string) error {
 func Setuproutes(r *gin.Engine) {
 
 	// 静态文件目录
-	r.Static("/css", "./static/css")
-	r.Static("/js", "./static/js")
+	r.Static("/css", "frontend/public/lib/css")
+	r.Static("/js", "frontend/public/lib/js")
 
 	// 加载 HTML 模板文件并处理加载错误
-	if err := loadHTMLFiles(r, "static"); err != nil {
+	if err := loadHTMLFiles(r, "frontend/public/html"); err != nil {
 		panic("Failed to load HTML files: " + err.Error())
 	}
 
