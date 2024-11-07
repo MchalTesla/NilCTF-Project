@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-
 	"NilCTF/models" // 确保导入模型包
 	"NilCTF/utils"
 
@@ -13,12 +12,10 @@ import (
 	"gorm.io/driver/postgres"
 )
 
-var DB *gorm.DB
-var JwtSecret []byte
-
 // Config 结构体用于解析 YAML 配置
 type Config struct {
 	Database struct {
+		DB 		*gorm.DB					// 已初始化的DB实例
 		Host     string `yaml:"host"`
 		User     string `yaml:"user"`
 		Name     string `yaml:"name"`
@@ -26,7 +23,8 @@ type Config struct {
 		SSLMode  string `yaml:"ssl_mode"`
 	} `yaml:"database"`
 	Jwt struct {
-		SecretKey			string `yaml:"secret_key"`				// 手动设置 JWT 密钥
+		JwtSecret 			[]byte			// 已配置的JwtSecret
+		SecretKey			string `yaml:"secret_key"`				// 手动设置的 JWT 密钥
 		RandomSecretLength	int    `yaml:"random_secret_length"`	// 随机密钥长度
 		EffectiveDuration	int	  `yaml:"effective_duration"`		// 令牌有效时长
 	} `yaml:"jwt"`
@@ -37,40 +35,40 @@ type Config struct {
 	} `yaml:"middleware"`
 }
 
-var AppConfig Config
-
-func init() {
-	loadConfig()
-	jwtSecretConfig()
-	ConnectDB()
-	models.InitializeConfigs(DB)
+func NewConfig(configFile string) *Config {
+	var config Config
+	config.loadConfigFile(configFile)
+	config.jwtSecretConfig()
+	config.ConnectDB()
+	models.InitializeConfigs(config.Database.DB)
+	return &config
 }
 
 // loadConfig 从 YAML 文件加载配置
-func loadConfig() {
-	file, err := os.Open("config.yaml")
+func (c *Config) loadConfigFile(configFile string) {
+	file, err := os.Open(configFile)
 	if err != nil {
 		log.Fatal("无法打开配置文件:", err)
 	}
 	defer file.Close()
 
 	decoder := yaml.NewDecoder(file)
-	err = decoder.Decode(&AppConfig)
+	err = decoder.Decode(&c)
 	if err != nil {
 		log.Fatal("无法解析配置文件:", err)
 	}
 }
 
 // jwtSecretConfig 配置 JWT 密钥
-func jwtSecretConfig() {
+func (c *Config) jwtSecretConfig() {
 	var err error
 
 	// 如果手动设置了 JwtSecret，则使用配置中的 secret_key
-	if AppConfig.Jwt.SecretKey != "" {
-		JwtSecret = []byte(AppConfig.Jwt.SecretKey)
+	if c.Jwt.SecretKey != "" {
+		c.Jwt.JwtSecret = []byte(c.Jwt.SecretKey)
 	} else {
 		// 否则，生成随机密钥
-		JwtSecret, err = utils.GenerateRandomSecret(AppConfig.Jwt.RandomSecretLength)
+		c.Jwt.JwtSecret, err = utils.GenerateRandomSecret(c.Jwt.RandomSecretLength)
 		if err != nil {
 			log.Fatal("生成 JWT 密钥失败:", err)
 		}
@@ -78,12 +76,12 @@ func jwtSecretConfig() {
 }
 
 // ConnectDB 初始化数据库连接
-func ConnectDB() {
+func (c *Config) ConnectDB() {
 	var err error
 	dsn := fmt.Sprintf("host=%s user=%s dbname=%s password=%s sslmode=%s",
-		AppConfig.Database.Host, AppConfig.Database.User, AppConfig.Database.Name, AppConfig.Database.Password, AppConfig.Database.SSLMode)
+		c.Database.Host, c.Database.User, c.Database.Name, c.Database.Password, c.Database.SSLMode)
 
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	c.Database.DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("数据库连接失败:", err)
 	}
@@ -99,7 +97,7 @@ func ConnectDB() {
 		&models.Config{},
     }
     // 调用自动迁移函数
-    err = DB.AutoMigrate(modelsToMigrate...)
+    err = c.Database.DB.AutoMigrate(modelsToMigrate...)
     if err != nil {
         log.Fatal("自动迁移失败:", err)
     } else {

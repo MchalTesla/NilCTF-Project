@@ -1,8 +1,7 @@
 package controllers
 
 import (
-	"NilCTF/config"
-	"NilCTF/models"
+	"NilCTF/services/interface"
 	"net/http"
 	"time"
 
@@ -10,20 +9,24 @@ import (
 )
 
 type IndexControllers struct {
-
+	US services_interface.UserServiceInterface
 }
 
-func (r *IndexControllers) Index(c *gin.Context) {
+func NewIndexControllers(US services_interface.UserServiceInterface) *IndexControllers {
+	return &IndexControllers{US: US}
+}
+
+func (ic *IndexControllers) Index(c *gin.Context) {
 	// middleware获取ID
 	userID, existing := c.Get("userID")
 	if !existing {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail"})
 	}
-	// 创建一个user变量，用于存储用户信息
-	var user models.User
-	// 从数据库中获取用户名
-	if err := config.DB.Where("ID = ?", userID).Find(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail"})
+
+	user, err := ic.US.GetNow(userID.(uint))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": err.Error()})
+		return
 	}
 
 	// 获取当前时间

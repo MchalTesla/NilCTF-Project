@@ -85,3 +85,23 @@ func (r *UserService) Update(userID uint, updates *dto.UserUpdate) error {
 	}
 	return nil
 }
+
+// 获取当前用户信息
+func (r *UserService) GetNow(userID uint) (*dto.UserInfo, error) {
+	var userDTO dto.UserInfo
+
+	user, err := r.UM.Get(userID, "", "")
+	if err != nil {
+		return nil, err
+	}
+	
+	userDTO.Username = user.Username
+	userDTO.Email = user.Email
+	userDTO.Description = user.Description
+	userDTO.Status = user.Status
+	userDTO.Role = user.Role
+	userDTO.Tag = user.Tag
+	userDTO.CreatedAt = user.CreatedAt
+
+	return &userDTO, nil
+}

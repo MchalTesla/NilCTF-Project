@@ -10,10 +10,15 @@ import (
 )
 
 type HomeControllers struct {
+    HS services_interface.HomeServiceInterface
+}
+
+func NewHomeControllers(HS services_interface.HomeServiceInterface) *HomeControllers {
+    return &HomeControllers{HS: HS}
 }
 
 // Home 用户主页
-func (r *HomeControllers) Home(c *gin.Context, US services_interface.HomeServiceInterface) {
+func (hc *HomeControllers) Home(c *gin.Context) {
     var userID uint
     {
         id, _ := c.Get("userID")
@@ -21,7 +26,7 @@ func (r *HomeControllers) Home(c *gin.Context, US services_interface.HomeService
     }
 
     // 获取用户信息
-    updates, err := US.Info(userID)
+    updates, err := hc.HS.Info(userID)
     if err != nil {
         if err == error_code.ErrInternalServer {
             c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": error_code.ErrInvalidInput.Error()})

@@ -1,7 +1,6 @@
 package main
 
 import (
-	_ "NilCTF/config"
 	"NilCTF/routes"
 
 	"github.com/gin-gonic/gin"

@@ -43,37 +43,38 @@ func Setuproutes(r *gin.Engine) {
 	}
 
 	// 实例化服务和存储库
-	userRepo := repositories.NewUserRepository(config.DB)
-	configRepo := repositories.NewConfigRepository(config.DB)
+	config := config.NewConfig("config.yaml")
+	userRepo := repositories.NewUserRepository(config.Database.DB)
+	configRepo := repositories.NewConfigRepository(config.Database.DB)
 	userManager := managers.NewUserManager(userRepo, configRepo)
 	userService := services.NewUserService(userManager)
 	homeService := services.NewHomeService(userRepo)
 	managerService := services.NewManagerService(userManager)
 
 	// 控制器初始化
-	indexControllers := &controllers.IndexControllers{}
+	indexControllers := controllers.NewIndexControllers(userService)
+	homeControllers := controllers.NewHomeControllers(homeService)
 	competitionControllers := &controllers.CompetitionControllers{}
-	homeControllers := &controllers.HomeControllers{}
 	managerController := controllers.NewManagerController(managerService)
 
 	// 初始化 Middleware
 	preMiddleware := middleware.NewPreMiddleware()
-	postMiddleware := middleware.NewPostMiddleware(userManager)
+	postMiddleware := middleware.NewPostMiddleware(userManager, config.Jwt.JwtSecret)
 
 	// 初始化user控制器
 	userControllers := controllers.NewUserControllers(
 		userService, 
 		false, 
-		config.AppConfig.Jwt.EffectiveDuration, 
+		config.Jwt.EffectiveDuration, 
 		postMiddleware,
 	)
 
 	// 配置前置中间件
 	r.Use(
 		preMiddleware.RateLimitMiddleware(
-			rate.Limit(config.AppConfig.Middleware.IPSpeedLimit), 
-			config.AppConfig.Middleware.IPSpeedMaxLimit, 
-			config.AppConfig.Middleware.IPMaxPlayers,
+			rate.Limit(config.Middleware.IPSpeedLimit), 
+			config.Middleware.IPSpeedMaxLimit, 
+			config.Middleware.IPMaxPlayers,
 		),
 
 		preMiddleware.CSPMiddleware(),
@@ -119,7 +120,7 @@ func Setuproutes(r *gin.Engine) {
 		userGroup.Use(postMiddleware.JWTAuthMiddleware("all"))
 		{
 			userGroup.GET("/index", indexControllers.Index)
-			userGroup.GET("/home", func(c *gin.Context) { homeControllers.Home(c, homeService) })
+			userGroup.GET("/home", homeControllers.Home)
 			userGroup.POST("/home/modify", func(c *gin.Context) { homeControllers.Modify(c, userService) })
 			userGroup.GET("/verify", userControllers.VerifyLogin)
 		}
