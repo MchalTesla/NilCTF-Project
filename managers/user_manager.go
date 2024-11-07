@@ -3,7 +3,7 @@ package managers
 import (
 	"NilCTF/error_code"
 	"NilCTF/models"
-	repositories_interface "NilCTF/repositories/interface"
+	"NilCTF/repositories/interface"
 	"NilCTF/utils"
 )
 

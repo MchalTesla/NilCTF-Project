@@ -6,9 +6,10 @@ import (
 	"NilCTF/models"
 	"NilCTF/utils"
 	"time"
+	"strings"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 
@@ -34,21 +35,21 @@ func (h *PostMiddleware) JWTAuthMiddleware(role string) gin.HandlerFunc {
 		// 从 Cookie 获取 token
 		tokenString, err := c.Cookie("auth_token")
 		if err != nil {
-			utils.RespondWithError(c, error_code.ErrUserNotLoggedIn)
+			h.RespondWithError(c, error_code.ErrUserNotLoggedIn)
 			return
 		}
 
 		// 解析 token
 		token, claims, err := utils.ParseToken(tokenString, h.jwtSecret)
 		if err != nil || !token.Valid || claims.ExpiresAt.Time.Before(time.Now()) {
-			utils.RespondWithError(c, error_code.ErrUserNotLoggedIn)
+			h.RespondWithError(c, error_code.ErrUserNotLoggedIn)
 			return
 		}
 
 		// 根据 claims.ID 获取用户信息
 		var user *models.User
 		if user, err = h.UM.Get(claims.ID, "", ""); err != nil {
-			utils.RespondWithError(c, error_code.ErrUserNotFound)
+			h.RespondWithError(c, error_code.ErrUserNotFound)
 			return
 		}
 
@@ -57,17 +58,17 @@ func (h *PostMiddleware) JWTAuthMiddleware(role string) gin.HandlerFunc {
 		case "all":
 		case "admin":
 			if user.Role != "admin" {
-				utils.RespondWithError(c, error_code.ErrPermissionDenied)
+				h.RespondWithError(c, error_code.ErrPermissionDenied)
 				return
 			}
 		case "user":
 			if user.Role != "user" {
-				utils.RespondWithError(c, error_code.ErrPermissionDenied)
+				h.RespondWithError(c, error_code.ErrPermissionDenied)
 				return
 			}
 		case "organizer":
 			if user.Role != "organizer" {
-				utils.RespondWithError(c, error_code.ErrPermissionDenied)
+				h.RespondWithError(c, error_code.ErrPermissionDenied)
 				return
 			}
 		}
@@ -82,20 +83,31 @@ func (h *PostMiddleware) JWTAuthMiddleware(role string) gin.HandlerFunc {
 	}
 }
 
-// GenerateToken 生成 JWT Token
-func (h *PostMiddleware) GenerateToken(ID uint, jwtTime int) (string, error) {
-	claims := utils.Claims{
-		ID: ID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(jwtTime) * time.Hour)), // 设置过期时间
-			IssuedAt:  jwt.NewNumericDate(time.Now()),                     // 设置签发时间
-		},
+// respondWithError 响应错误
+func (h *PostMiddleware) RespondWithError(c *gin.Context, err error) {
+	message := err.Error()
+	isAPIRequest := strings.HasPrefix(c.FullPath(), "/api/")
+
+	switch err {
+	case error_code.ErrPermissionDenied:
+		if isAPIRequest {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": message})
+		} else {
+			c.Redirect(http.StatusFound, "/forbidden")
+		}
+	case error_code.ErrUserNotLoggedIn, error_code.ErrUserNotFound:
+		if isAPIRequest {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": message, "redirect": "/login"})
+		} else {
+			c.Redirect(http.StatusFound, "/login")
+		}
+	default:
+		if isAPIRequest {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": message})
+		} else {
+			c.Redirect(http.StatusFound, "/server_error")
+		}
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(h.jwtSecret)
-	if err != nil {
-		return "", error_code.ErrInternalServer // 生成错误转换为内部服务器错误
-	}
-	return tokenString, nil
+	c.Abort()
 }

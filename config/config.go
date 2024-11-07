@@ -29,9 +29,13 @@ type Config struct {
 		EffectiveDuration	int	  `yaml:"effective_duration"`		// 令牌有效时长
 	} `yaml:"jwt"`
 	Middleware struct {
+		StartIPSpeedLimit	bool	`yaml:"start_ip_speed_limit"`	// 是否启用基于IP的速度控制器
 		IPSpeedLimit		int	`yaml:"ip_speed_limit"`		// 基于IP的速度控制
-		IPSpeedMaxLimit	int	`yaml:"ip_speed_max_limit"`		// 基于IP的突发速度控制
+		IPSpeedMaxLimit		int	`yaml:"ip_speed_max_limit"`	// 基于IP的突发速度控制
 		IPMaxPlayers		int	`yaml:"ip_max_players"`		// 基于IP的玩家最大数量
+		StartCSP			bool	`yaml:"start_csp"`		// 是否启用CSP安全策略
+		CSPValue			string	`yaml:"csp_value"`		// CSP的值
+		
 	} `yaml:"middleware"`
 }
 

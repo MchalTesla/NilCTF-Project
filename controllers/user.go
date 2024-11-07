@@ -5,6 +5,7 @@ import (
 	"NilCTF/error_code"
 	"NilCTF/middleware"
 	"NilCTF/services/interface"
+	"NilCTF/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,18 +15,19 @@ type UserControllers struct {
 	US services_interface.UserServiceInterface
 	cookieSecure bool
 	jwtTime int
+	jwtSecret []byte
 	postMiddleware *middleware.PostMiddleware
 }
 
 func NewUserControllers(US services_interface.UserServiceInterface, 
-	cookieSecure bool, 
-	jwtTime int, 
-	postMiddleware *middleware.PostMiddleware) *UserControllers {
+		cookieSecure bool,
+		jwtTime int,
+		jwtSecret []byte,
+	) *UserControllers {
 	return &UserControllers{
 		US: US,
 		cookieSecure: cookieSecure,
 		jwtTime: jwtTime,
-		postMiddleware: postMiddleware,
 	}
 }
 
@@ -57,7 +59,7 @@ func (r *UserControllers) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := r.postMiddleware.GenerateToken(userID, r.jwtTime)
+	token, err := utils.GenerateToken(userID, r.jwtTime, r.jwtSecret)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": error_code.ErrInternalServer.Error()})
 		return

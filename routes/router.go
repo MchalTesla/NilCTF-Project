@@ -53,6 +53,7 @@ func Setuproutes(r *gin.Engine) {
 
 	// 控制器初始化
 	indexControllers := controllers.NewIndexControllers(userService)
+	userControllers := controllers.NewUserControllers(userService, false, config.Jwt.EffectiveDuration, config.Jwt.JwtSecret)
 	homeControllers := controllers.NewHomeControllers(homeService)
 	competitionControllers := &controllers.CompetitionControllers{}
 	managerController := controllers.NewManagerController(managerService)
@@ -61,24 +62,20 @@ func Setuproutes(r *gin.Engine) {
 	preMiddleware := middleware.NewPreMiddleware()
 	postMiddleware := middleware.NewPostMiddleware(userManager, config.Jwt.JwtSecret)
 
-	// 初始化user控制器
-	userControllers := controllers.NewUserControllers(
-		userService, 
-		false, 
-		config.Jwt.EffectiveDuration, 
-		postMiddleware,
-	)
-
-	// 配置前置中间件
-	r.Use(
-		preMiddleware.RateLimitMiddleware(
-			rate.Limit(config.Middleware.IPSpeedLimit), 
-			config.Middleware.IPSpeedMaxLimit, 
-			config.Middleware.IPMaxPlayers,
-		),
-
-		preMiddleware.CSPMiddleware(),
-	)
+	// 部署前置基于IP的速度控制器中间件
+	if config.Middleware.StartIPSpeedLimit == true {
+		r.Use(
+			preMiddleware.RateLimitMiddleware(
+				rate.Limit(config.Middleware.IPSpeedLimit), 
+				config.Middleware.IPSpeedMaxLimit, 
+				config.Middleware.IPMaxPlayers,
+			),
+		)
+	}
+	// 部署前置CSP安全规则中间件
+	if config.Middleware.StartCSP == true {
+		r.Use(preMiddleware.CSPMiddleware(config.Middleware.CSPValue))
+	}
 
 	// 页面路由
 	r.GET("/login", func(c *gin.Context) { c.HTML(http.StatusOK, "login.html", nil) })
