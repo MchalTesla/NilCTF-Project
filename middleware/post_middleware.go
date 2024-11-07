@@ -31,7 +31,7 @@ func respondWithError(c *gin.Context, err error) {
 		} else {
 			c.Redirect(http.StatusFound, "/forbidden")
 		}
-	case error_code.ErrUserNotLoggedIn:
+	case error_code.ErrUserNotLoggedIn, error_code.ErrUserNotFound:
 		if isAPIRequest {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": message, "redirect": "/login"})
 		} else {

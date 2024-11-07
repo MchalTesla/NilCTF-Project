@@ -124,7 +124,7 @@
                                     <td>${user.ID}</td>
                                     <td>${new Date(user.CreatedAt).toLocaleString()}</td>
                                     <td class="editable" data-field="Username">${user.Username}</td>
-                                    <td class="editable" data-field="Description">${user.Description || '无'}</td>
+                                    <td class="editable" data-field="Description">${user.Description}</td>
                                     <td class="editable" data-field="Email">${user.Email}</td>
                                     <td class="editable" data-field="Status">${user.Status}</td>
                                     <td class="editable" data-field="Role">${user.Role}</td>
@@ -180,12 +180,7 @@ $(document).on('click', '.save-button', function() {
         if (field === 'Tag') {
             // 将字符串转化为数组
             const currentTags = currentValue.split(',').map(tag => tag.trim()).filter(tag => tag); // 去掉空标签
-            const originalTags = originalValue ? originalValue.split(',').map(tag => tag.trim()) : []; // 处理原始为空情况
-
-            // 比较数组是否不同，仅在发生变更时添加到更新对象
-            if (currentTags.join(',') !== originalTags.join(',')) {
-                updates.Tag = currentTags; // 仅传送更改后的标签数组
-            }
+            updates.Tag = currentTags; // 仅传送更改后的标签数组
         } else if (currentValue !== originalValue) {
             // 其他字段：当前值与原始值不同时添加到更新对象
             updates[field] = currentValue;
