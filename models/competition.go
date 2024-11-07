@@ -3,13 +3,14 @@ package models
 import (
 	"time"
 
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
 type Competition struct {
 	gorm.Model
 	Name          string           `gorm:"unique;not null"`          // 比赛名称
-	Description   string           `gorm:"type:text"`                // 比赛描述
+	Description   string           `gorm:"type:text;default:''"`                // 比赛描述
 	StartTime     time.Time        `gorm:"not null"`                 // 比赛开始时间
 	EndTime       time.Time        `gorm:"not null"`                 // 比赛结束时间
 	Status        string           `gorm:"default:'upcoming'"`       // 比赛状态 (enum: upcoming, ongoing, completed)
@@ -22,7 +23,7 @@ type Competition struct {
 	Public        bool             `gorm:"default:true"`             // 比赛是否公开
 	Suspend       bool             `gorm:"default:false"`            // 比赛是否暂停
 	JoinLock      bool             `gorm:"default:false"`            // 比赛是否允许加入
-	Tag           []string         `gorm:"type:jsonb"`    // 标签
+	Tag        	  pq.StringArray   `gorm:"type:text[];default:'{}'"` // 标签
 	Teams         []CompetitionTeam `gorm:"foreignKey:CompetitionID"` // 关联参加的队伍
 }
 
