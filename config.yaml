@@ -3,8 +3,14 @@ database:
   user: "root"
   name: "NILCTF"
   password: "root"
-  sslmode: "disable"
+  ssl_mode: "disable"
 
 jwt:
-  secret_key: "your_secret_key"  # 可选: 手动设置 JWT 密钥，默认是注释掉的
-  random_secret_length: 32  # 随机密钥长度
+  secret_key: "your_secret_key"   # 可选: 手动设置 JWT 密钥，默认是注释掉的
+  random_secret_length: 32        # 随机密钥长度
+  effective_duration: 42          # 令牌有效时长
+
+middleware:
+  ip_speed_limit: 5               # 基于IP的速度控制
+  ip_speed_max_limit: 5           # 基于IP的突发速度控制
+  ip_max_players: 5000            # 基于IP的玩家最大数量

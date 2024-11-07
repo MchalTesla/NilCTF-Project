@@ -23,12 +23,18 @@ type Config struct {
 		User     string `yaml:"user"`
 		Name     string `yaml:"name"`
 		Password string `yaml:"password"`
-		SSLMode  string `yaml:"sslmode"`
+		SSLMode  string `yaml:"ssl_mode"`
 	} `yaml:"database"`
 	Jwt struct {
-		SecretKey          string `yaml:"secret_key"`           // 手动设置 JWT 密钥
-		RandomSecretLength int    `yaml:"random_secret_length"` // 随机密钥长度
+		SecretKey			string `yaml:"secret_key"`				// 手动设置 JWT 密钥
+		RandomSecretLength	int    `yaml:"random_secret_length"`	// 随机密钥长度
+		EffectiveDuration	int	  `yaml:"effective_duration"`		// 令牌有效时长
 	} `yaml:"jwt"`
+	Middleware struct {
+		IPSpeedLimit		int	`yaml:"ip_speed_limit"`		// 基于IP的速度控制
+		IPSpeedMaxLimit	int	`yaml:"ip_speed_max_limit"`		// 基于IP的突发速度控制
+		IPMaxPlayers		int	`yaml:"ip_max_players"`		// 基于IP的玩家最大数量
+	} `yaml:"middleware"`
 }
 
 var AppConfig Config
@@ -68,7 +74,6 @@ func jwtSecretConfig() {
 		if err != nil {
 			log.Fatal("生成 JWT 密钥失败:", err)
 		}
-		log.Println("[JWTSECRET]:", JwtSecret)
 	}
 }
 

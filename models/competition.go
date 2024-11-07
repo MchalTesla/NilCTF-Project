@@ -24,6 +24,6 @@ type Competition struct {
 	Suspend       bool             `gorm:"default:false"`            // 比赛是否暂停
 	JoinLock      bool             `gorm:"default:false"`            // 比赛是否允许加入
 	Tag        	  pq.StringArray   `gorm:"type:text[];default:'{}'"` // 标签
-	Teams         []CompetitionTeam `gorm:"foreignKey:CompetitionID"` // 关联参加的队伍
+	Teams         []Team		   `gorm:"many2many:competition_teams"` // 多对多关联参加的队伍，通过 CompetitionTeam 关联
 }
 

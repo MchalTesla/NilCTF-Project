@@ -14,5 +14,5 @@ type Team struct {
 	Status      string   `gorm:"default:'pending'"`                    // 队伍状态 (enum: active, banned, pending)
 	Tag         pq.StringArray `gorm:"type:text[];default:'{}'"`  	   // 标签
 	Members     []User   `gorm:"many2many:team_users;"`                // 多对多关联，通过 TeamUser 关联
-	Competitions []CompetitionTeam `gorm:"foreignKey:TeamID"` // 关联参加的比赛
+	Competitions []Competition `gorm:"many2many:competition_teams"`	   // 多对多关联参加的比赛，通过 CompetitionTeam 关联
 }

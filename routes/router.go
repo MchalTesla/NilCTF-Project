@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/time/rate"
 )
 
 // 加载 HTML 文件
@@ -60,11 +61,21 @@ func Setuproutes(r *gin.Engine) {
 	postMiddleware := middleware.NewPostMiddleware(userManager)
 
 	// 初始化user控制器
-	userControllers := controllers.NewUserControllers(userService, false, 48, postMiddleware)
+	userControllers := controllers.NewUserControllers(
+		userService, 
+		false, 
+		config.AppConfig.Jwt.EffectiveDuration, 
+		postMiddleware,
+	)
 
 	// 配置前置中间件
 	r.Use(
-		preMiddleware.RateLimitMiddleware(5, 10, 5000),
+		preMiddleware.RateLimitMiddleware(
+			rate.Limit(config.AppConfig.Middleware.IPSpeedLimit), 
+			config.AppConfig.Middleware.IPSpeedMaxLimit, 
+			config.AppConfig.Middleware.IPMaxPlayers,
+		),
+
 		preMiddleware.CSPMiddleware(),
 	)
 
