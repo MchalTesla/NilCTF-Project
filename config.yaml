@@ -12,11 +12,11 @@ jwt:
 
 middleware:
   # IpSpeedLimit
-  start_ip_speed_limit: true      # 是否启用基于IP的速度控制器
+  start_ip_speed_limit: false      # 是否启用基于IP的速度控制器
   ip_speed_limit: 10              # 基于IP的速度控制
   ip_speed_max_limit: 10          # 基于IP的突发速度控制
   ip_max_players: 5000            # 基于IP的玩家最大数量
   # CSP
-  start_csp: true                 # 是否启用CSP安全策略
+  start_csp: false                 # 是否启用CSP安全策略
     # CSP的值
   csp_value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
