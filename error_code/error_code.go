@@ -46,7 +46,8 @@ var (
 	ErrRequestBodyTooLarge		= errors.New("ERR_REQUEST_BODY_TOO_LARGE")		// 请求体太大
 	ErrFileTooLarge				= errors.New("ERR_FILE_TOO_LARGE")				// 上传的文件太大
 	ErrTooManyFiles				= errors.New("ERR_TOO_MANY_FILES")				// 上传的文件太多
-	ErrUnsupportedContentType	= errors.New("ERR_UNSUPPORTED_CONTENT_TYPE")		// 请求体类型错误，只允许JSON和文件上传
+	ErrUnsupportedContentType	= errors.New("ERR_UNSUPPORTED_CONTENT_TYPE")	// 请求体类型错误，只允许JSON和文件上传
+	ErrTokenExpired				= errors.New("ERR_TOKEN_EXPIRED")				// token过期
 
 	// 控制器错误
 	ErrInvalidPageParameter		= errors.New("ERR_INVALID_PAGE_PARAMETER")		// 错误的页数

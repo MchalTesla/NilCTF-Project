@@ -112,6 +112,9 @@ func ParseToken(tokenString string, jwtSecret []byte) (*jwt.Token, *Claims, erro
 	})
 
 	if err != nil {
+		if err == jwt.ErrTokenExpired {
+			return nil, nil, error_code.ErrTokenExpired
+		}
 		return nil, nil, error_code.ErrInternalServer // 解析错误转换为内部服务器错误
 	}
 

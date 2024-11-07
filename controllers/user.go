@@ -28,6 +28,7 @@ func NewUserControllers(US services_interface.UserServiceInterface,
 		US: US,
 		cookieSecure: cookieSecure,
 		jwtTime: jwtTime,
+		jwtSecret: jwtSecret,
 	}
 }
 
