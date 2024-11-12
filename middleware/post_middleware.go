@@ -62,12 +62,12 @@ func (h *PostMiddleware) JWTAuthMiddleware(role string) gin.HandlerFunc {
 				return
 			}
 		case "user":
-			if user.Role != "user" {
+			if user.Role != "user" && user.Role != "admin" {
 				h.RespondWithError(c, error_code.ErrPermissionDenied)
 				return
 			}
 		case "organizer":
-			if user.Role != "organizer" {
+			if user.Role != "organizer" && user.Role != "admin" {
 				h.RespondWithError(c, error_code.ErrPermissionDenied)
 				return
 			}
