@@ -1,2 +1,17 @@
 {
+    "dataworkspace.excludedProjects": [
+        "mariadb/mariadb.sqlproj"
+    ],
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "localhost",
+            "database": "NILCTF",
+            "username": "root",
+            "password": "root"
+        }
+    ]
 }
