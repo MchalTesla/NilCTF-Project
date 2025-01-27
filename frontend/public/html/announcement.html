@@ -31,31 +31,23 @@
     <script src="/js/jquery-3.5.1.min.js"></script>
     <script>
         $(document).ready(function() {
-            $.ajax({
-                type: 'GET',
-                url: '/api/announcements',
-                success: function(response) {
-                    if (response.status === "ok") {
-                        const announcements = response.announcements;
-                        let html = '';
-                        announcements.forEach(announcement => {
-                            html += `
-                                <div class="card mb-3">
-                                    <div class="card-body">
-                                        <h5 class="card-title">${announcement.title}</h5>
-                                        <p class="card-text">${announcement.content}</p>
-                                        <p class="card-text"><small class="text-muted">发布时间: ${new Date(announcement.published_at).toLocaleString()}</small></p>
-                                    </div>
+            $.get("/api/announcements", function(data) {
+                if (data.status === "ok") {
+                    var announcements = data.announcements;
+                    var announcementsDiv = $("#announcements");
+                    announcements.forEach(function(announcement) {
+                        var announcementHtml = `
+                            <div class="card mt-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">${announcement.title}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">发布者: ${announcement.author_name}</h6>
+                                    <p class="card-text">${announcement.content}</p>
+                                    <p class="card-text"><small class="text-muted">发布时间: ${new Date(announcement.published_at).toLocaleString()}</small></p>
                                 </div>
-                            `;
-                        });
-                        $('#announcements').html(html);
-                    } else {
-                        $('#announcements').html('<p>加载公告失败，请稍后重试。</p>');
-                    }
-                },
-                error: function() {
-                    $('#announcements').html('<p>加载公告失败，请稍后重试。</p>');
+                            </div>
+                        `;
+                        announcementsDiv.append(announcementHtml);
+                    });
                 }
             });
         });

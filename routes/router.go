@@ -52,7 +52,7 @@ func Setuproutes(r *gin.Engine) {
 	ManagerService := services.NewManagerService(userManager)
 	announcementRepo := repositories.NewAnnouncementRepository(config.Database.DB)
 	announcementManager := managers.NewAnnouncementManager(announcementRepo)
-	announcementService := services.NewAnnouncementService(announcementManager)
+	announcementService := services.NewAnnouncementService(announcementManager, userManager)
 
 	// 公告相关路由
 	announcementController := controllers.NewAnnouncementController(announcementService)

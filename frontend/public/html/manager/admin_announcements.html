@@ -45,6 +45,7 @@
                                     <div class="card mb-3">
                                         <div class="card-body">
                                             <h5 class="card-title">${announcement.title}</h5>
+                                            <h6 class="card-subtitle mb-2 text-muted">发布者: ${announcement.author_name}</h6>
                                             <p class="card-text">${announcement.content}</p>
                                             <p class="card-text"><small class="text-muted">发布时间: ${new Date(announcement.published_at).toLocaleString()}</small></p>
                                             <button class="btn btn-warning btn-sm update-announcement" data-id="${announcement.id}">更新</button>

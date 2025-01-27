@@ -1,19 +1,21 @@
 package services
 
 import (
-    "NilCTF/dto"
-    "NilCTF/error_code"
-    "NilCTF/models"
-    "NilCTF/repositories/interface"
+	"NilCTF/dto"
+	"NilCTF/error_code"
+	managers_interface "NilCTF/managers/interface"
+	"NilCTF/models"
+	"NilCTF/repositories/interface"
 )
 
 type AnnouncementService struct {
-    AR repositories_interface.AnnouncementRepositoryInterface
+    AM managers_interface.AnnouncementManagerInterface
+    UM managers_interface.UserManagerInterface
 }
 
 // NewAnnouncementService 返回一个新的 AnnouncementService 实例
-func NewAnnouncementService(AR repositories_interface.AnnouncementRepositoryInterface) *AnnouncementService {
-    return &AnnouncementService{AR: AR}
+func NewAnnouncementService(AM repositories_interface.AnnouncementRepositoryInterface, UM managers_interface.UserManagerInterface) *AnnouncementService {
+    return &AnnouncementService{AM: AM, UM: UM}
 }
 
 func (s *AnnouncementService) Create(announcementDTO *dto.AnnouncementDTO) error {
@@ -30,7 +32,7 @@ func (s *AnnouncementService) Create(announcementDTO *dto.AnnouncementDTO) error
         Priority:    announcementDTO.Priority,
     }
 
-    return s.AR.Create(announcement)
+    return s.AM.Create(announcement)
 }
 
 func (s *AnnouncementService) Get(ID uint) (*dto.AnnouncementDTO, error) {
@@ -38,7 +40,7 @@ func (s *AnnouncementService) Get(ID uint) (*dto.AnnouncementDTO, error) {
         return nil, error_code.ErrInvalidID
     }
 
-    announcement, err := s.AR.Get(ID)
+    announcement, err := s.AM.Get(ID)
     if err != nil {
         return nil, err
     }
@@ -71,7 +73,7 @@ func (s *AnnouncementService) Update(announcementDTO *dto.AnnouncementDTO) error
 	announcement.Status = announcementDTO.Status
 	announcement.Priority = announcementDTO.Priority
 
-    return s.AR.Update(&announcement)
+    return s.AM.Update(&announcement)
 }
 
 func (s *AnnouncementService) Delete(ID uint) error {
@@ -79,27 +81,32 @@ func (s *AnnouncementService) Delete(ID uint) error {
         return error_code.ErrInvalidID
     }
 
-    announcement, err := s.AR.Get(ID)
+    announcement, err := s.AM.Get(ID)
     if err != nil {
         return err
     }
 
-    return s.AR.Delete(announcement)
+    return s.AM.Delete(announcement)
 }
 
 func (s *AnnouncementService) List(filters map[string]interface{}, limit, offset int, isFuzzy bool) ([]dto.AnnouncementDTO, error) {
-    announcements, err := s.AR.List(filters, limit, offset, isFuzzy)
+    announcements, err := s.AM.List(filters, limit, offset, isFuzzy)
     if err != nil {
         return nil, err
     }
 
     var announcementDTOs []dto.AnnouncementDTO
     for _, announcement := range announcements {
+        user, err := s.UM.Get(announcement.AuthorID, "", "")
+        if err != nil {
+            return nil, err
+        }
         announcementDTOs = append(announcementDTOs, dto.AnnouncementDTO{
             ID:          announcement.ID,
             Title:       announcement.Title,
             Content:     announcement.Content,
             AuthorID:    announcement.AuthorID,
+            AuthorName:  user.Username,
             PublishedAt: announcement.PublishedAt,
             Status:      announcement.Status,
             Priority:    announcement.Priority,
