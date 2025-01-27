@@ -99,6 +99,7 @@ func (c *Config) ConnectDB() {
         &models.TeamUser{},
         &models.Team{},
 		&models.Config{},
+		&models.Announcement{},
     }
     // 调用自动迁移函数
     err = c.Database.DB.AutoMigrate(modelsToMigrate...)

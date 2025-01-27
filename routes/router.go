@@ -49,14 +49,21 @@ func Setuproutes(r *gin.Engine) {
 	userManager := managers.NewUserManager(userRepo, configRepo)
 	userService := services.NewUserService(userManager)
 	homeService := services.NewHomeService(userRepo)
-	managerService := services.NewManagerService(userManager)
+	ManagerService := services.NewManagerService(userManager)
+	announcementRepo := repositories.NewAnnouncementRepository(config.Database.DB)
+	announcementManager := managers.NewAnnouncementManager(announcementRepo)
+	announcementService := services.NewAnnouncementService(announcementManager)
+
+	// 公告相关路由
+	announcementController := controllers.NewAnnouncementController(announcementService)
+	adminAnnouncementController := controllers.NewAdminAnnouncementController(announcementService)
 
 	// 控制器初始化
 	indexControllers := controllers.NewIndexControllers(userService)
 	userControllers := controllers.NewUserControllers(userService, false, config.Jwt.EffectiveDuration, config.Jwt.JwtSecret)
 	homeControllers := controllers.NewHomeControllers(homeService)
 	competitionControllers := &controllers.CompetitionControllers{}
-	managerController := controllers.NewManagerController(managerService)
+	adminManagerController := controllers.NewAdminManagerController(ManagerService)
 
 	// 初始化 Middleware
 	preMiddleware := middleware.NewPreMiddleware()
@@ -66,8 +73,8 @@ func Setuproutes(r *gin.Engine) {
 	if config.Middleware.StartIPSpeedLimit == true {
 		r.Use(
 			preMiddleware.RateLimitMiddleware(
-				rate.Limit(config.Middleware.IPSpeedLimit), 
-				config.Middleware.IPSpeedMaxLimit, 
+				rate.Limit(config.Middleware.IPSpeedLimit),
+				config.Middleware.IPSpeedMaxLimit,
 				config.Middleware.IPMaxPlayers,
 			),
 		)
@@ -77,13 +84,17 @@ func Setuproutes(r *gin.Engine) {
 		r.Use(preMiddleware.CSPMiddleware(config.Middleware.CSPValue))
 	}
 
-	// 页面路由
+	/*
+	页面路由
+	*/
+
 	r.GET("/login", func(c *gin.Context) { c.HTML(http.StatusOK, "login.html", nil) })
 	r.GET("/register", func(c *gin.Context) { c.HTML(http.StatusOK, "register.html", nil) })
 	r.GET("/", func(c *gin.Context) { c.HTML(http.StatusOK, "index.html", nil) })
 	r.GET("/index", func(c *gin.Context) { c.HTML(http.StatusOK, "index.html", nil) })
 	r.GET("/forbidden", func(c *gin.Context) { c.HTML(http.StatusForbidden, "forbidden.html", nil) })
 	r.GET("/server_error", func(c *gin.Context) { c.HTML(http.StatusInternalServerError, "server_error.html", nil) })
+	r.GET("/announcements", func(c *gin.Context) { c.HTML(http.StatusOK, "announcement.html", nil) })
 
 	homeHTMLGroup := r.Group("/home")
 	{
@@ -99,18 +110,18 @@ func Setuproutes(r *gin.Engine) {
 		managerHTMLGroup.Use(postMiddleware.JWTAuthMiddleware("admin"))
 		{
 			managerHTMLGroup.GET("", func(c *gin.Context) { c.HTML(http.StatusOK, "manager.html", nil) })
-			managerHTMLGroup.GET("/users", func(c *gin.Context) { c.HTML(http.StatusOK, "users.html", nil) })
+			managerHTMLGroup.GET("/admin_users", func(c *gin.Context) { c.HTML(http.StatusOK, "admin_users.html", nil) })
+			managerHTMLGroup.GET("/admin_announcements", func(c *gin.Context) { c.HTML(http.StatusOK, "admin_announcements.html", nil) })
 		}
 	}
 
 	// 创建 API 路由组并添加预处理中间件
 	apiGroup := r.Group("/api")
 	{
-
-		// 注册 API 路由
 		apiGroup.POST("/register", userControllers.Register)
 		apiGroup.POST("/login", userControllers.Login)
 		apiGroup.GET("/user/logout", userControllers.Logout)
+		apiGroup.GET("/announcements", announcementController.ListAnnouncements)
 
 		// 用户路由组
 		userGroup := apiGroup.Group("")
@@ -126,10 +137,10 @@ func Setuproutes(r *gin.Engine) {
 		adminGroup := apiGroup.Group("/manager")
 		adminGroup.Use(postMiddleware.JWTAuthMiddleware("admin"))
 		{
-			adminGroup.GET("/users_count", managerController.GetUsersCount)
-			adminGroup.POST("/list_users", managerController.ListUsers)
-			adminGroup.POST("/update", managerController.UpdateUserByAdmin)
-			adminGroup.POST("/delete", managerController.DeleteUserByAdmin)
+			adminGroup.GET("/users_count", adminManagerController.GetUsersCount)
+			adminGroup.POST("/list_users", adminManagerController.ListUsers)
+			adminGroup.POST("/users", adminManagerController.HandleUser) // 合并用户相关操作
+			adminGroup.POST("/announcements", adminAnnouncementController.HandleAnnouncement) // 合并公告相关操作
 		}
 
 		// 不受保护的比赛列表路由

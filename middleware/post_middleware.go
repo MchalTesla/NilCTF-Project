@@ -79,6 +79,7 @@ func (h *PostMiddleware) JWTAuthMiddleware(role string) gin.HandlerFunc {
 		c.Set("userEmail", user.Email)
 		c.Set("userStatus", user.Status)
 		c.Set("userRole", user.Role)
+		c.Set("currentTime", time.Now()) // 将当前时间保存到上下文中
 		c.Next()
 	}
 }

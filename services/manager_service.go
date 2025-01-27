@@ -20,47 +20,52 @@ func (s *ManagerService) GetUsersCount() (int64, error) {
 }
 
 func (s *ManagerService) GetTotalPages(limit int) (int64, error) {
-	// 获取用户总数
-	totalRecords, err := s.GetUsersCount()
+	count, err := s.GetUsersCount()
 	if err != nil {
 		return 0, err
 	}
-
-	// 计算总页数
-	totalPages := (totalRecords + int64(limit) - 1) / int64(limit)
-	return totalPages, nil
+	return (count + int64(limit) - 1) / int64(limit), nil
 }
 
 func (s *ManagerService) ListAllUsers(page int, limit int) ([]dto.UserInfoByAdmin, error) {
-	var usersDTO []dto.UserInfoByAdmin
 	offset := (page - 1) * limit
 	users, err := s.UM.List(nil, limit, offset, false)
 	if err != nil {
 		return nil, err
 	}
 
-	// 将users遍历进usersDTO
+	var usersDTO []dto.UserInfoByAdmin
 	for _, user := range users {
-		userInfoByAdmin := dto.UserInfoByAdmin{
-			ID:          user.ID,
-			Username:    user.Username,
+		usersDTO = append(usersDTO, dto.UserInfoByAdmin{
+			ID:        user.ID,
+			Username:  user.Username,
 			Description: user.Description,
-			Email:       user.Email,
-			Status:      user.Status,
-			Role:        user.Role,
-			Tag:         user.Tag,
-			CreatedAt:   user.CreatedAt,
-		}
-		usersDTO = append(usersDTO, userInfoByAdmin)
+			Email:     user.Email,
+			Status:    user.Status,
+			Role:      user.Role,
+			Tag: 	 user.Tag,
+			CreatedAt: user.CreatedAt,
+		})
 	}
-
 	return usersDTO, nil
+}
+
+func (s *ManagerService) CreateUser(user *dto.UserUpdateByAdmin) error {
+	var newUser models.User
+	newUser.Username = user.Username
+	newUser.Password = user.Password
+	newUser.Email = user.Email
+	newUser.Status = user.Status
+	newUser.Role = user.Role
+	newUser.Description = user.Description
+	newUser.Tag = user.Tag
+
+	return s.UM.Create(&newUser)
 }
 
 func (s *ManagerService) UpdateUsers(updates *dto.UserUpdateByAdmin) error {
 	var user models.User
 
-	// 根据传入的字段更新值
 	user.ID = updates.ID
 	user.Username = updates.Username
 	user.Password = updates.Password
@@ -70,10 +75,7 @@ func (s *ManagerService) UpdateUsers(updates *dto.UserUpdateByAdmin) error {
 	user.Role = updates.Role
 	user.Tag = updates.Tag
 
-	if err := s.UM.Update(&user); err != nil {
-		return err
-	}
-	return nil
+	return s.UM.Update(&user)
 }
 
 func (s *ManagerService) DeleteUser(ID uint) error {

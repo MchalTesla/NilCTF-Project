@@ -8,7 +8,7 @@ import (
 type Team struct {
 	gorm.Model
 	Name        string   `gorm:"not null"`                             // 队伍名
-	Description string   `gorm:"type:text;default:''"`                            // 队伍描述
+	Description string   `gorm:"type:text;default:''"`                 // 队伍描述
 	OwnerID     uint     `gorm:"not null"`                             // 创建者用户ID
 	Owner       User     `gorm:"foreignKey:OwnerID;references:ID"`     // 外键关联到 User 表
 	Status      string   `gorm:"default:'pending'"`                    // 队伍状态 (enum: active, banned, pending)

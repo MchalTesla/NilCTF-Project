@@ -3,7 +3,10 @@ package models
 import (
 	"gorm.io/gorm"
 )
-
+const (
+	RoleLeader = "leader"
+	RoleMember = "member"
+)
 type TeamUser struct {
 	gorm.Model
 	UserID uint   `gorm:"not null;uniqueIndex:idx_user_team"` // 用户ID

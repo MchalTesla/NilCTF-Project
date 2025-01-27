@@ -32,7 +32,6 @@
             margin: 0 5px;
         }
     </style>
-    <script src="/js/utils.js"></script> <!-- 添加工具脚本（如 SHA-256 加密功能） -->
 </head>
 <body>
     <h1>用户管理</h1>
@@ -63,6 +62,7 @@
         <span id="currentPage">1</span>
         <button id="nextPage">下一页</button>
     </div>
+    <button id="createUser">创建新用户</button>
 
     <script>
         let currentPage = 1;
@@ -165,56 +165,54 @@
                 });
             });
 
-// 处理保存按钮点击事件
-$(document).on('click', '.save-button', function() {
-    const row = $(this).closest('tr');
-    const id = row.data('id');
-    const username = row.data('username');
-    const updates = { ID: id, Username: username }; // 初始化数据对象
+            // 处理保存按钮点击事件
+            $(document).on('click', '.save-button', function() {
+                const row = $(this).closest('tr');
+                const id = row.data('id');
+                const username = row.data('username');
+                const updates = { ID: id, Username: username }; // 初始化数据对象
 
-    row.find('.editable.editing').each(function() {
-        const field = $(this).data('field');
-        const originalValue = $(this).attr('data-original'); // 原始值
-        const currentValue = $(this).text().trim(); // 当前值
+                row.find('.editable.editing').each(function() {
+                    const field = $(this).data('field');
+                    const originalValue = $(this).attr('data-original'); // 原始值
+                    const currentValue = $(this).text().trim(); // 当前值
 
-        if (field === 'Tag') {
-            // 将字符串转化为数组
-            const currentTags = currentValue.split(',').map(tag => tag.trim()).filter(tag => tag); // 去掉空标签
-            updates.Tag = currentTags; // 仅传送更改后的标签数组
-        } else if (currentValue !== originalValue) {
-            // 其他字段：当前值与原始值不同时添加到更新对象
-            updates[field] = currentValue;
-        }
-    });
+                    if (field === 'Tag') {
+                        // 将字符串转化为数组
+                        const currentTags = currentValue.split(',').map(tag => tag.trim()).filter(tag => tag); // 去掉空标签
+                        updates.Tag = currentTags; // 仅传送更改后的标签数组
+                    } else if (currentValue !== originalValue) {
+                        // 其他字段：当前值与原始值不同时添加到更新对象
+                        updates[field] = currentValue;
+                    }
+                });
 
-    // 仅在存在更新字段时发送请求
-    if (Object.keys(updates).length > 2) { // >2 因为初始化时含有 ID 和 Username
-        $.ajax({
-            url: '/api/manager/update',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(updates),
-            success: function(response) {
-                if (response.status === 'ok') {
-                    alert('用户信息已更新');
-                    loadUsers(currentPage);
-                } else {
-                    alert('更新失败: ' + response.message);
+                // 仅在存在更新字段时发送请求
+                if (Object.keys(updates).length > 2) { // >2 因为初始化时含有 ID 和 Username
+                    $.ajax({
+                        url: '/api/manager/users',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ action: 'update', user: updates }),
+                        success: function(response) {
+                            if (response.status === 'ok') {
+                                alert('用户信息已更新');
+                                loadUsers(currentPage);
+                            } else {
+                                alert('更新失败: ' + response.message);
+                            }
+                        },
+                        error: function() {
+                            alert('请求失败，请重试。');
+                        }
+                    });
                 }
-            },
-            error: function() {
-                alert('请求失败，请重试。');
-            }
-        });
-    }
 
-    // 恢复不可编辑状态
-    $(this).hide().siblings('.cancel-button').hide();
-    $(this).siblings('.edit-button').show();
-    row.find('.editable').removeClass('editing').attr('contenteditable', false);
-});
-
-
+                // 恢复不可编辑状态
+                $(this).hide().siblings('.cancel-button').hide();
+                $(this).siblings('.edit-button').show();
+                row.find('.editable').removeClass('editing').attr('contenteditable', false);
+            });
 
             // 更改密码按钮点击事件
             $(document).on('click', '.change-password-button', async function() {
@@ -227,10 +225,10 @@ $(document).on('click', '.save-button', function() {
                     const hashedPassword = await sha256(newPassword);
                     
                     $.ajax({
-                        url: '/api/manager/update',
+                        url: '/api/manager/users',
                         type: 'POST',
                         contentType: 'application/json',
-                        data: JSON.stringify({ ID: id, Password: hashedPassword }),
+                        data: JSON.stringify({ action: 'update', user: { ID: id, Password: hashedPassword } }),
                         success: function(response) {
                             if (response.status === 'ok') {
                                 alert('密码已更新');
@@ -252,10 +250,10 @@ $(document).on('click', '.save-button', function() {
 
                 if (confirm("确定要删除此用户吗？")) {
                     $.ajax({
-                        url: '/api/manager/delete',
+                        url: '/api/manager/users',
                         type: 'POST',
                         contentType: 'application/json',
-                        data: JSON.stringify({ ID: id }),
+                        data: JSON.stringify({ action: 'delete', user: { ID: id } }),
                         success: function(response) {
                             if (response.status === 'ok') {
                                 alert('用户已删除');
@@ -281,6 +279,37 @@ $(document).on('click', '.save-button', function() {
             $('#nextPage').click(function() {
                 if (currentPage < totalPages) {
                     loadUsers(currentPage + 1);
+                }
+            });
+
+            // 创建新用户按钮点击事件
+            $('#createUser').click(function() {
+                const username = prompt("请输入用户名:");
+                const password = prompt("请输入密码:");
+                const email = prompt("请输入邮箱:");
+                const status = prompt("请输入状态 (active, banned, pending):");
+                const role = prompt("请输入角色 (admin, user, organizer):");
+                const description = prompt("请输入描述:");
+                const tags = prompt("请输入标签 (用逗号分隔):").split(',').map(tag => tag.trim()).filter(tag => tag);
+
+                if (username && password && email) {
+                    $.ajax({
+                        url: '/api/manager/users',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ action: 'create', user: { Username: username, Password: password, Email: email, Status: status, Role: role, Description: description, Tag: tags } }),
+                        success: function(response) {
+                            if (response.status === 'ok') {
+                                alert('用户创建成功');
+                                loadUsers(currentPage);
+                            } else {
+                                alert('创建失败: ' + response.message);
+                            }
+                        },
+                        error: function() {
+                            alert('请求失败，请重试。');
+                        }
+                    });
                 }
             });
         });
