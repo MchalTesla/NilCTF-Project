@@ -28,7 +28,7 @@ func (r *Router) initAPIRoutes() {
     	// 用户路由
         {"/api/index", "GET", r.App.Container.Controllers["index"].(*controllers.IndexControllers).Index, nil, "user"},
         {"/api/home", "GET", r.App.Container.Controllers["home"].(*controllers.HomeControllers).Home, nil, "user"},
-        {"/api/home/modify", "POST", func(c *gin.Context) { r.App.Container.Controllers["home"].(*controllers.HomeControllers).Modify(c, r.App.Container.Services["user"].(*services.UserService)) }, nil, "user"},
+        {"/api/home/modify", "POST", func(c *gin.Context) { r.App.Container.Controllers["home"].(*controllers.HomeControllers).Modify(c, r.App.Container.Services["user"].(*services.UserService)); c.Next() }, nil, "user"},
         {"/api/verify", "GET", r.App.Container.Controllers["user"].(*controllers.UserControllers).VerifyLogin, nil, "user"},
 
     	// 管理员路由

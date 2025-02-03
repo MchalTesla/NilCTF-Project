@@ -17,21 +17,21 @@ func (r *Router) initHTMLRoutes() {
 	r.htmlRoutes = []HTMLRoute{
 		{"/login", "login.html", nil, "all"},
 		{"/register", "register.html", nil, "all"},
-		{"/", "index.html", nil, "all"},
+		{"/", "", []gin.HandlerFunc{func(c *gin.Context) { c.Redirect(302, "/index"); c.Next() }}, "all"},
 		{"/index", "index.html", nil, "all"},
-		{"/forbidden", "forbidden.html", nil, "all"},
-		{"/server_error", "server_error.html", nil, "all"},
 		{"/announcements", "announcements.html", nil, "all"},
+		{"/forbidden", "error/forbidden.html", nil, "all"},
+		{"/server_error", "error/server_error.html", nil, "all"},
 		
 		// 需要用户认证的路由
 		{"/home", "home.html", nil, "user"},
 		{"/home/modify", "modify.html", nil, "user"},
 		
 		// 管理员路由
-		{"/admin", "", []gin.HandlerFunc{func(c *gin.Context) { c.Redirect(302, "/admin/index") }}, "admin"},
+		{"/admin", "", []gin.HandlerFunc{func(c *gin.Context) { c.Redirect(302, "/admin/index"); c.Next() }}, "admin"},
 		{"/admin/index", "admin/index.html", nil, "admin"},
-		{"/admin/users", "admin/admin_users.html", nil, "admin"},
-		{"/admin/announcements", "admin/admin_announcements.html", nil, "admin"},
+		{"/admin/users", "admin/users.html", nil, "admin"},
+		{"/admin/announcements", "admin/announcements.html", nil, "admin"},
 	}
 }
 
@@ -45,6 +45,7 @@ func (r *Router) RegisterHTMLRoutes() {
 		if route.FilePath != "" {
 			handlers = append(handlers, func(c *gin.Context) {
 				c.File("frontend/public/html/" + route.FilePath)
+				c.Next()
 			})
 		}
 		r.Engine.GET(route.Path, handlers...)
