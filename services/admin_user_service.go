@@ -6,20 +6,20 @@ import (
 	"NilCTF/models"
 )
 
-type ManagerService struct {
+type AdminUserService struct {
 	UM managers_interface.UserManagerInterface
 }
 
-// NewManagerService 返回一个新的 ManagerService 实例
-func NewManagerService(UM managers_interface.UserManagerInterface) *ManagerService {
-	return &ManagerService{UM: UM}
+// NewAdminUserService 返回一个新的 AdminUserService 实例
+func NewAdminUserService(UM managers_interface.UserManagerInterface) *AdminUserService {
+	return &AdminUserService{UM: UM}
 }
 
-func (s *ManagerService) GetUsersCount() (int64, error) {
+func (s *AdminUserService) GetUsersCount() (int64, error) {
 	return s.UM.Count()
 }
 
-func (s *ManagerService) GetTotalPages(limit int) (int64, error) {
+func (s *AdminUserService) GetTotalPages(limit int) (int64, error) {
 	count, err := s.GetUsersCount()
 	if err != nil {
 		return 0, err
@@ -27,7 +27,7 @@ func (s *ManagerService) GetTotalPages(limit int) (int64, error) {
 	return (count + int64(limit) - 1) / int64(limit), nil
 }
 
-func (s *ManagerService) ListAllUsers(page int, limit int) ([]dto.UserInfoByAdmin, error) {
+func (s *AdminUserService) ListAllUsers(page int, limit int) ([]dto.UserInfoByAdmin, error) {
 	offset := (page - 1) * limit
 	users, err := s.UM.List(nil, limit, offset, false)
 	if err != nil {
@@ -50,7 +50,7 @@ func (s *ManagerService) ListAllUsers(page int, limit int) ([]dto.UserInfoByAdmi
 	return usersDTO, nil
 }
 
-func (s *ManagerService) CreateUser(user *dto.UserUpdateByAdmin) error {
+func (s *AdminUserService) CreateUser(user *dto.UserUpdateByAdmin) error {
 	var newUser models.User
 	newUser.Username = user.Username
 	newUser.Password = user.Password
@@ -63,7 +63,7 @@ func (s *ManagerService) CreateUser(user *dto.UserUpdateByAdmin) error {
 	return s.UM.Create(&newUser)
 }
 
-func (s *ManagerService) UpdateUsers(updates *dto.UserUpdateByAdmin) error {
+func (s *AdminUserService) UpdateUsers(updates *dto.UserUpdateByAdmin) error {
 	var user models.User
 
 	user.ID = updates.ID
@@ -78,7 +78,7 @@ func (s *ManagerService) UpdateUsers(updates *dto.UserUpdateByAdmin) error {
 	return s.UM.Update(&user)
 }
 
-func (s *ManagerService) DeleteUser(ID uint) error {
+func (s *AdminUserService) DeleteUser(ID uint) error {
 	var user models.User
 	user.ID = ID
 	return s.UM.Delete(&user)

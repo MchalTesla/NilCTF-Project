@@ -11,7 +11,7 @@ func main() {
 	r := gin.Default()
 
 	// 设置路由
-	routes.Setuproutes(r)
+	routes.NewRouter(r)
 
 	// 启动服务器
 	r.Run(":80") // 启动服务，监听8080端口

@@ -10,15 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type AdminManagerController struct {
-	MS services_interface.ManagerService
+type AdminUserController struct {
+	MS services_interface.AdminUserService
 }
 
-func NewAdminManagerController(MS services_interface.ManagerService) *AdminManagerController {
-	return &AdminManagerController{MS: MS}
+func NewAdminUserController(MS services_interface.AdminUserService) *AdminUserController {
+	return &AdminUserController{MS: MS}
 }
 
-func (mc *AdminManagerController) GetUsersCount(c *gin.Context) {
+func (mc *AdminUserController) GetUsersCount(c *gin.Context) {
 	userCount, err := mc.MS.GetUsersCount()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": error_code.ErrInvalidPageParameter.Error()})
@@ -29,7 +29,7 @@ func (mc *AdminManagerController) GetUsersCount(c *gin.Context) {
 }
 
 // ListUsers 列出所有用户，可分页并选择每页显示数量
-func (mc *AdminManagerController) ListUsers(c *gin.Context) {
+func (mc *AdminUserController) ListUsers(c *gin.Context) {
 	// 从查询参数获取分页信息
 	pageStr := c.DefaultQuery("page", "1")
 	limitStr := c.DefaultQuery("limit", "10")
@@ -69,7 +69,7 @@ func (mc *AdminManagerController) ListUsers(c *gin.Context) {
 }
 
 // HandleUser 处理用户相关操作
-func (mc *AdminManagerController) HandleUser(c *gin.Context) {
+func (mc *AdminUserController) HandleUser(c *gin.Context) {
     var request struct {
         Action string           `json:"action"`
         User   dto.UserUpdateByAdmin `json:"user"`
@@ -92,7 +92,7 @@ func (mc *AdminManagerController) HandleUser(c *gin.Context) {
     }
 }
 
-func (mc *AdminManagerController) createUser(c *gin.Context, user *dto.UserUpdateByAdmin) {
+func (mc *AdminUserController) createUser(c *gin.Context, user *dto.UserUpdateByAdmin) {
     if err := mc.MS.CreateUser(user); err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
         return
@@ -100,7 +100,7 @@ func (mc *AdminManagerController) createUser(c *gin.Context, user *dto.UserUpdat
     c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-func (mc *AdminManagerController) updateUser(c *gin.Context, user *dto.UserUpdateByAdmin) {
+func (mc *AdminUserController) updateUser(c *gin.Context, user *dto.UserUpdateByAdmin) {
     if err := mc.MS.UpdateUsers(user); err != nil {
         if err == error_code.ErrInternalServer {
             c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": error_code.ErrInternalServer.Error()})
@@ -112,7 +112,7 @@ func (mc *AdminManagerController) updateUser(c *gin.Context, user *dto.UserUpdat
     c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-func (mc *AdminManagerController) deleteUser(c *gin.Context, user *dto.UserUpdateByAdmin) {
+func (mc *AdminUserController) deleteUser(c *gin.Context, user *dto.UserUpdateByAdmin) {
     if err := mc.MS.DeleteUser(user.ID); err != nil {
         c.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": err.Error()})
         return
