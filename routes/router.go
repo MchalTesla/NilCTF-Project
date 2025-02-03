@@ -5,9 +5,7 @@ import "github.com/gin-gonic/gin"
 type Router struct {
 	App *App
 	htmlRoutes []HTMLRoute
-	apiPublicRoutes []APIRoute
-	apiUserRoutes []APIRoute
-	apiAdminRoutes []APIRoute
+	apiRoutes []APIRoute
 	Engine     *gin.Engine
 }
 
